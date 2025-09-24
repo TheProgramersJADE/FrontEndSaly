@@ -1,0 +1,113 @@
+﻿@page "/usuarios/editar/{id:int}"
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>Editar Usuario</h3>
+
+@if (usuario == null)
+{
+    <p>Cargando usuario...</p>
+}
+else
+{
+    <EditForm Model="usuario" OnValidSubmit="ActualizarUsuarioAsync">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label>Username:</label>
+            <InputText @bind-Value="usuario.Username" class="form-control" />
+        </div>
+
+        <div>
+            <label>Email:</label>
+            <InputText @bind-Value="usuario.Email" class="form-control" />
+        </div>
+
+        <div>
+            <label>Password  (OPCIONAL):</label>
+            <InputText @bind-Value="usuario.Password" class="form-control" type="password" />
+        </div>
+
+        <div>
+            <label>Rol:</label>
+            <InputSelect @bind-Value="usuario.Role_Id" class="form-control" Disabled="true">
+                <option value="1">Cliente</option>
+                <option value="2">Trabajador</option>
+                <option value="3">Administrador</option>
+            </InputSelect>
+        </div>
+
+        <button type="button" class="btn btn-secondary me-2" @onclick="Cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Actualizar</button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <p>@mensaje</p>
+    }
+}
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private UsuarioRequest usuario;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Obtener token
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/weather");
+            return;
+        }
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        // Cargar datos del usuario
+        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+    }
+
+    private async Task ActualizarUsuarioAsync()
+    {
+        if (usuario.Role_Id == 0) usuario.Role_Id = 1; // Default a Cliente si no selecciona nada
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}", usuario);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Usuario actualizado correctamente.";
+                Navigation.NavigateTo("/counter"); // Volver a gestión
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error al actualizar usuario: {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/counter");
+    }
+
+    public class UsuarioRequest
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public int Role_Id { get; set; }
+    }
+}
