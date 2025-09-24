@@ -1,6 +1,6 @@
 ﻿@using System.Text.Json.Serialization;
 
-@page "/"
+@page "/crearusuario"
 @page "/crearusuario/{from?}"
 
 
@@ -64,7 +64,7 @@
         if (from == "gestion")
             Navigation.NavigateTo("/counter");
         else
-            Navigation.NavigateTo("/weather");
+            Navigation.NavigateTo("/");
     }
 
     private async Task CrearUsuarioAsync()
@@ -82,7 +82,7 @@
                 if (from == "gestion")
                     Navigation.NavigateTo("/counter");
                 else
-                    Navigation.NavigateTo("/weather");
+                    Navigation.NavigateTo("/");
             }
             else
             {
