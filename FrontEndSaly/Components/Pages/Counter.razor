@@ -60,6 +60,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            // si no hay token, lo mando al login
+            Navigation.NavigateTo("/weather");
+            return;
+        }
+
         await CargarUsuariosAsync();
     }
 
@@ -87,7 +95,8 @@ else
 
     private void IrACrearUsuario()
     {
-        Navigation.NavigateTo("/"); // Redirige al formulario de crear usuario
+        // ✅ Ir al registro con parámetro para saber que vienes de gestión
+        Navigation.NavigateTo("/crearusuario/gestion");
     }
 
     private void VerUsuario(int id)

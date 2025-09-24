@@ -1,6 +1,8 @@
 ﻿@using System.Text.Json.Serialization;
 
 @page "/"
+@page "/crearusuario/{from?}"
+
 
 @inject HttpClient Http
 @inject NavigationManager Navigation
@@ -53,9 +55,16 @@
     private UsuarioRequest nuevoUsuario = new UsuarioRequest();
     private string mensaje;
 
+    [Parameter]
+    public string? from { get; set; } // ✅ Saber desde dónde vino el usuario
+
     private void VolverAUsuarios()
     {
-        Navigation.NavigateTo("/counter"); // Redirige a la gestión de usuarios
+        // ✅ Cancelar también respeta desde dónde vino
+        if (from == "gestion")
+            Navigation.NavigateTo("/counter");
+        else
+            Navigation.NavigateTo("/weather");
     }
 
     private async Task CrearUsuarioAsync()
@@ -68,11 +77,16 @@
             {
                 mensaje = "✅ Usuario creado con éxito.";
                 nuevoUsuario = new UsuarioRequest(); // limpia el formulario
-              // Redirigir automáticamente a la tabla de usuarios
-                Navigation.NavigateTo("/counter");
+
+                // ✅ Si vino desde gestión, vuelve a gestión. Si no, al login
+                if (from == "gestion")
+                    Navigation.NavigateTo("/counter");
+                else
+                    Navigation.NavigateTo("/weather");
             }
             else
             {
+                var errorContent = await response.Content.ReadAsStringAsync();
                 mensaje = $"❌ Error al crear usuario: {response.ReasonPhrase}";
             }
         }
