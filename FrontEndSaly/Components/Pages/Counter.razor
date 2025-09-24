@@ -1,4 +1,6 @@
-﻿@page "/counter"
+﻿@using System.Text.Json.Serialization;
+
+@page "/counter"
 
 <PageTitle>Usuarios</PageTitle>
 
@@ -80,7 +82,7 @@ else
         var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
         if (string.IsNullOrEmpty(token))
         {
-            Navigation.NavigateTo("/weather");
+            Navigation.NavigateTo("/");
             return;
         }
 
@@ -158,9 +160,16 @@ else
 
     public class UsuarioDTO
     {
+        [JsonPropertyName("id")]
         public int Id { get; set; }
+
+        [JsonPropertyName("username")]
         public string Username { get; set; }
+
+        [JsonPropertyName("email")]
         public string Email { get; set; }
+
+        [JsonPropertyName("role_id")]
         public int Role_Id { get; set; }
     }
 }
