@@ -1,0 +1,100 @@
+﻿@using System.Text.Json.Serialization;
+
+@page "/"
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Crear Usuario</h3>
+
+<EditForm Model="nuevoUsuario" OnValidSubmit="CrearUsuarioAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Username:</label>
+        <InputText @bind-Value="nuevoUsuario.Username" class="form-control" />
+    </div>
+
+    <div>
+        <label>Email:</label>
+        <InputText @bind-Value="nuevoUsuario.Email" class="form-control" />
+    </div>
+
+    <div>
+        <label>Password:</label>
+        <InputText @bind-Value="nuevoUsuario.Password" class="form-control" type="password" />
+    </div>
+
+    <div>
+        <label>Rol:</label>
+        <InputSelect @bind-Value="nuevoUsuario.Role_Id" class="form-control">
+            <option value="1">Cliente</option>
+            <option value="2">Trabajador</option>
+            <option value="3">Administrador</option>
+        </InputSelect>
+    </div>
+
+    @* <div>
+        <label>Role ID:</label>
+        <InputNumber @bind-Value="nuevoUsuario.Role_Id" class="form-control" />
+    </div> *@
+
+    <button type="button" class="btn btn-secondary me-2" @onclick="VolverAUsuarios">Volver</button>
+    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p>@mensaje</p>
+}
+
+@code {
+    private UsuarioRequest nuevoUsuario = new UsuarioRequest();
+    private string mensaje;
+
+    private void VolverAUsuarios()
+    {
+        Navigation.NavigateTo("/counter"); // Redirige a la gestión de usuarios
+    }
+
+    private async Task CrearUsuarioAsync()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("https://usersaly-api-node-js.onrender.com/usuarioslist", nuevoUsuario);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Usuario creado con éxito.";
+                nuevoUsuario = new UsuarioRequest(); // limpia el formulario
+              // Redirigir automáticamente a la tabla de usuarios
+                Navigation.NavigateTo("/counter");
+            }
+            else
+            {
+                mensaje = $"❌ Error al crear usuario: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    public class UsuarioRequest
+    {
+        [JsonPropertyName("username")]
+        public string Username { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+
+        [JsonPropertyName("password")]
+        public string Password { get; set; }
+
+        [JsonPropertyName("role_id")]
+        public int Role_Id { get; set; } = 1; // Valor por defecto a Cliente
+    }
+}
+

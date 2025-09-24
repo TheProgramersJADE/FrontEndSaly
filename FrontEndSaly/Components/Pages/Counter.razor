@@ -1,0 +1,133 @@
+﻿@page "/counter"
+
+<PageTitle>Usuarios</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>Gestión de Usuarios</h3>
+
+<button class="btn btn-primary mb-3" @onclick="IrACrearUsuario">Crear Usuario</button>
+
+@if (usuarios == null)
+{
+    <p>Cargando usuarios...</p>
+}
+else if (!usuarios.Any())
+{
+    <p>No hay usuarios registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Role ID</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var usuario in usuarios)
+            {
+                <tr>
+                    <td>@usuario.Id</td>
+                    <td>@usuario.Username</td>
+                    <td>@usuario.Email</td>
+                    <td>@usuario.Role_Id</td>
+                    <td>
+                        <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
+                        <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
+                        <button class="btn btn-danger btn-sm" @onclick="@(() => EliminarUsuario(usuario.Id))">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p>@mensaje</p>
+}
+
+@code {
+    private List<UsuarioDTO> usuarios;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarUsuariosAsync();
+    }
+
+    private async Task CargarUsuariosAsync()
+    {
+        try
+        {
+            // Obtener token guardado en sessionStorage
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+
+            // Agregar token al header Authorization
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // Consumir endpoint protegido
+            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar usuarios: {ex.Message}";
+        }
+    }
+
+    private void IrACrearUsuario()
+    {
+        Navigation.NavigateTo("/"); // Redirige al formulario de crear usuario
+    }
+
+    private void VerUsuario(int id)
+    {
+        Navigation.NavigateTo($"/usuarios/ver/{id}");
+    }
+
+    private void EditarUsuario(int id)
+    {
+        Navigation.NavigateTo($"/usuarios/editar/{id}");
+    }
+
+    private async Task EliminarUsuario(int id)
+    {
+        if (!await JS.InvokeAsync<bool>("confirm", $"¿Deseas eliminar al usuario {id}?")) return;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Usuario eliminado correctamente.";
+                await CargarUsuariosAsync(); // recargar tabla
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar usuario: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    public class UsuarioDTO
+    {
+        public int Id { get; set; }
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public int Role_Id { get; set; }
+    }
+}

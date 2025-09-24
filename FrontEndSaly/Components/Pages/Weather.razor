@@ -1,0 +1,89 @@
+﻿@page "/weather"
+
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Iniciar Sesión</h3>
+
+<EditForm Model="loginModel" OnValidSubmit="LoginAsync">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Email:</label>
+        <InputText @bind-Value="loginModel.Email" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label>Password:</label>
+        <InputText @bind-Value="loginModel.Password" class="form-control" type="password" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Ingresar</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p>@mensaje</p>
+}
+
+<div class="mt-3 text-center">
+    <p>¿No tienes cuenta?</p>
+    <button class="btn btn-outline-primary" @onclick="IrARegistro">Regístrate aquí</button>
+</div>
+
+@code {
+    private LoginRequest loginModel = new LoginRequest();
+    private string mensaje;
+
+    private async Task LoginAsync()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("https://usersaly-api-node-js.onrender.com/usuarioslist/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var resultado = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+                // Guardar token en sessionStorage
+                await JS.InvokeVoidAsync("sessionStorage.setItem", "authToken", resultado.Token);
+
+                mensaje = "✅ Login exitoso!";
+
+                // Redirigir a la página de usuarios
+                Navigation.NavigateTo("/counter");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error de login: {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    // ✅ Método para ir a la página de crear usuario
+    private void IrARegistro()
+    {
+        Navigation.NavigateTo("/"); // cambia esta ruta si tu página de registro tiene otro @page
+    }
+
+    public class LoginRequest
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+    }
+
+    public class LoginResponse
+    {
+        public string Mensaje { get; set; }
+        public string Token { get; set; } // si tu API devuelve JWT
+        public int Role_Id { get; set; } // si quieres guardar el rol
+    }
+}
+
