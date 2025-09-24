@@ -8,6 +8,20 @@
 
 <h3>Gestión de Usuarios</h3>
 
+<div class="mb-3 d-flex align-items-center">
+    <input type="text" class="form-control me-2" placeholder="Buscar por email..."
+           @bind="filtroEmail" />
+
+    <select class="form-select me-2" @bind="filtroRoleId">
+        <option value="">Todos los roles</option>
+        <option value="1">Administrador</option>
+        <option value="2">Usuario</option>
+        <!-- Agrega más roles si los tienes -->
+    </select>
+
+    <button class="btn btn-secondary" @onclick="BuscarUsuariosAsync">Buscar</button>
+</div>
+
 <button class="btn btn-primary mb-3" @onclick="IrACrearUsuario">Crear Usuario</button>
 
 @if (usuarios == null)
@@ -58,13 +72,15 @@ else
     private List<UsuarioDTO> usuarios;
     private string mensaje;
 
+    private string filtroEmail = string.Empty;
+    private string filtroRoleId = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
         if (string.IsNullOrEmpty(token))
         {
-            // si no hay token, lo mando al login
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/weather");
             return;
         }
 
@@ -75,14 +91,10 @@ else
     {
         try
         {
-            // Obtener token guardado en sessionStorage
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-
-            // Agregar token al header Authorization
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            // Consumir endpoint protegido
             usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
                 "https://usersaly-api-node-js.onrender.com/usuarioslist"
             );
@@ -93,21 +105,33 @@ else
         }
     }
 
-    private void IrACrearUsuario()
+    private async Task BuscarUsuariosAsync()
     {
-        // ✅ Ir al registro con parámetro para saber que vienes de gestión
-        Navigation.NavigateTo("/crearusuario/gestion");
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // Construir query string
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(filtroEmail)) query.Add($"email={filtroEmail}");
+            if (!string.IsNullOrWhiteSpace(filtroRoleId)) query.Add($"role_id={filtroRoleId}");
+            var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
+
+            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
+                $"https://usersaly-api-node-js.onrender.com/usuarioslist/buscar{queryString}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar usuarios: {ex.Message}";
+        }
     }
 
-    private void VerUsuario(int id)
-    {
-        Navigation.NavigateTo($"/usuarios/ver/{id}");
-    }
-
-    private void EditarUsuario(int id)
-    {
-        Navigation.NavigateTo($"/usuarios/editar/{id}");
-    }
+    private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario/gestion");
+    private void VerUsuario(int id) => Navigation.NavigateTo($"/usuarios/ver/{id}");
+    private void EditarUsuario(int id) => Navigation.NavigateTo($"/usuarios/editar/{id}");
 
     private async Task EliminarUsuario(int id)
     {
@@ -119,7 +143,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 mensaje = "✅ Usuario eliminado correctamente.";
-                await CargarUsuariosAsync(); // recargar tabla
+                await CargarUsuariosAsync();
             }
             else
             {
