@@ -9,7 +9,7 @@
 
 <h3>Gestión de Usuarios</h3>
 
-@if (usuarioDetalle == null)
+@if (usuarioDetalle == null && usuarioEliminar == null)
 {
     <!-- Tabla y búsqueda de usuarios -->
     <div class="mb-3 d-flex align-items-center">
@@ -57,7 +57,7 @@
                         <td>
                             <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
                             <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="@(() => EliminarUsuario(usuario.Id))">Eliminar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(usuario))">Eliminar</button>
                         </td>
                     </tr>
                 }
@@ -65,7 +65,7 @@
         </table>
     }
 }
-else
+else if (usuarioDetalle != null && usuarioEliminar == null)
 {
     <!-- Panel de detalle de usuario -->
     <div class="card p-3 mb-3">
@@ -76,6 +76,26 @@ else
     </div>
 
     <button class="btn btn-primary" @onclick="Regresar">Regresar</button>
+}
+else if (usuarioEliminar != null)
+{
+    <!-- Panel de confirmación de eliminación -->
+    <div class="card p-3 mb-3 border-danger">
+        <div class="alert alert-warning mb-3" role="alert">
+            ⚠️ ¿Estás seguro que deseas eliminar este usuario?
+        </div>
+
+        <p><strong>ID:</strong> @usuarioEliminar.Id</p>
+        <p><strong>Username:</strong> @usuarioEliminar.Username</p>
+        <p><strong>Email:</strong> @usuarioEliminar.Email</p>
+        <p><strong>Role ID:</strong> @usuarioEliminar.Role_Id</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn btn-danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
+            <button class="btn btn-secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
+        </div>
+    </div>
+
 }
 
 @if (!string.IsNullOrEmpty(mensaje))
@@ -90,6 +110,7 @@ else
     private string filtroRoleId = string.Empty;
 
     private UsuarioDTO usuarioDetalle = null;
+    private UsuarioDTO usuarioEliminar = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -166,19 +187,31 @@ else
         }
     }
 
-    private void Regresar() => usuarioDetalle = null;
-
-    private async Task EliminarUsuario(int id)
+    private void Regresar()
     {
-        if (!await JS.InvokeAsync<bool>("confirm", $"¿Deseas eliminar al usuario {id}?")) return;
+        usuarioDetalle = null;
+        usuarioEliminar = null;
+    }
 
+    // **NUEVO: Eliminar con confirmación**
+    private void MostrarConfirmacionEliminar(UsuarioDTO usuario)
+    {
+        usuarioEliminar = usuario;
+        usuarioDetalle = usuario; // Muestra info en panel
+    }
+
+    private async Task ConfirmarEliminar()
+    {
         try
         {
-            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{usuarioEliminar.Id}");
             if (response.IsSuccessStatusCode)
             {
                 mensaje = "✅ Usuario eliminado correctamente.";
+                usuarioEliminar = null;
+                usuarioDetalle = null;
                 await CargarUsuariosAsync();
+                Navigation.NavigateTo("/counter");
             }
             else
             {
@@ -189,6 +222,13 @@ else
         {
             mensaje = $"🚨 Error de conexión: {ex.Message}";
         }
+    }
+
+    private void CancelarEliminar()
+    {
+        usuarioEliminar = null;
+        usuarioDetalle = null;
+        Navigation.NavigateTo("/counter");
     }
 
     public class UsuarioDTO
