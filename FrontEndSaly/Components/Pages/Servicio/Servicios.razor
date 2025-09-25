@@ -13,6 +13,13 @@
 {
     <button class="btn btn-primary mb-3" @onclick="IrACrearServicio">Crear Servicio</button>
 
+    <!-- 🔍 Filtro de búsqueda por ID -->
+    <div class="input-group mb-3" style="max-width: 300px;">
+        <input type="number" class="form-control" placeholder="Buscar por ID" @bind="busquedaId" />
+        <button class="btn btn-outline-primary" @onclick="BuscarPorId">Buscar</button>
+        <button class="btn btn-outline-secondary" @onclick="LimpiarBusqueda">Limpiar</button>
+    </div>
+
     @if (servicios == null)
     {
         <p>Cargando servicios...</p>
@@ -95,6 +102,8 @@ else if (servicioEliminar != null)
 
     private ServicioDTO servicioDetalle = null;
     private ServicioDTO servicioEliminar = null;
+
+    private int? busquedaId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -195,6 +204,50 @@ else if (servicioEliminar != null)
         servicioEliminar = null;
         servicioDetalle = null;
         Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    // ✅ Buscar servicio por ID
+    private async Task BuscarPorId()
+    {
+        if (busquedaId == null || busquedaId <= 0)
+        {
+            mensaje = "⚠️ Ingrese un ID válido para buscar.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var servicio = await Http.GetFromJsonAsync<ServicioDTO>(
+                $"https://gestionsalyapi.onrender.com/servicios/{busquedaId}"
+            );
+
+            if (servicio != null)
+            {
+                servicios = new List<ServicioDTO> { servicio };
+                mensaje = $"✅ Servicio con ID {busquedaId} encontrado.";
+            }
+            else
+            {
+                servicios = new List<ServicioDTO>();
+                mensaje = $"⚠️ No se encontró ningún servicio con ID {busquedaId}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar servicio: {ex.Message}";
+        }
+    }
+
+    // ✅ Limpiar búsqueda y recargar todo
+    private async Task LimpiarBusqueda()
+    {
+        busquedaId = null;
+        mensaje = "";
+        await CargarServiciosAsync();
     }
 
     public class ServicioDTO
