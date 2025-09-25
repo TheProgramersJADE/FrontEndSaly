@@ -1,0 +1,94 @@
+﻿@page "/servicios/crear"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Crear Servicio</PageTitle>
+
+<h3> Crear nuevo servicio</h3>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-info">@mensaje</div>
+}
+
+<EditForm Model="@nuevoServicio" OnValidSubmit="@CrearNuevoServicio">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Nombre del Servicio</label>
+        <InputText class="form-control" @bind-Value="nuevoServicio.Nombre_Servicio" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Descripción</label>
+        <InputTextArea class="form-control" @bind-Value="nuevoServicio.Descripcion" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Duración (en horas o minutos)</label>
+        <InputNumber class="form-control" @bind-Value="nuevoServicio.Duracion" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Precio</label>
+        <InputText class="form-control" @bind-Value="nuevoServicio.Precio" />
+    </div>
+
+    <button type="submit" class="btn btn-success">✅ Guardar</button>
+    <button type="button" class="btn btn-secondary ms-2" @onclick="Cancelar">Cancelar</button>
+</EditForm>
+
+@code {
+    private ServicioDTO nuevoServicio = new ServicioDTO();
+    private string mensaje;
+
+    private async Task CrearNuevoServicio()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/servicios", nuevoServicio);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Servicio creado correctamente.";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/servicio/servicios");
+            }
+            else
+            {
+                mensaje = $"❌ Error al crear servicio: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al conectar con el servidor: {ex.Message}";
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+}

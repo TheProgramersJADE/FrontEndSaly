@@ -1,0 +1,127 @@
+﻿@page "/servicios/editar/{id:int}"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Editar Servicio</PageTitle>
+
+<h3>✏️ Editar Servicio</h3>
+
+@if (servicio == null)
+{
+    <p>Cargando servicio...</p>
+}
+else
+{
+    <EditForm Model="@servicio" OnValidSubmit="@ActualizarServicio">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Nombre del Servicio</label>
+            <InputText class="form-control" @bind-Value="servicio.Nombre_Servicio" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <InputTextArea class="form-control" @bind-Value="servicio.Descripcion" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Duración</label>
+            <InputNumber class="form-control" @bind-Value="servicio.Duracion" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Precio</label>
+            <InputText class="form-control" @bind-Value="servicio.Precio" />
+        </div>
+
+        <button type="submit" class="btn btn-warning">💾 Guardar cambios</button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancelar">Cancelar</button>
+    </EditForm>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-info mt-3">@mensaje</div>
+}
+@code {
+
+    [Parameter] public int id { get; set; }
+    private ServicioDTO servicio;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarServicio();
+    }
+
+    private async Task CargarServicio()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicio = await Http.GetFromJsonAsync<ServicioDTO>($"https://gestionsalyapi.onrender.com/servicios/{id}");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicio: {ex.Message}";
+        }
+    }
+
+    private async Task ActualizarServicio()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PutAsJsonAsync($"https://gestionsalyapi.onrender.com/servicios/{id}", servicio);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Servicio actualizado correctamente.";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/servicio/servicios");
+            }
+            else
+            {
+                mensaje = $"❌ Error al actualizar servicio: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al actualizar: {ex.Message}";
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+
+}

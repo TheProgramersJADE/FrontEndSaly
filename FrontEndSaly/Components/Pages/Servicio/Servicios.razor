@@ -1,4 +1,4 @@
-﻿@page "/servicios"
+﻿@page "/servicio/servicios"
 @using System.Text.Json.Serialization
 
 <PageTitle>Gestión de Servicios</PageTitle>
@@ -42,7 +42,7 @@
                         <td>@servicio.Nombre_Servicio</td>
                         <td>@servicio.Descripcion</td>
                         <td>@servicio.Duracion</td>
-                        <td>@servicio.Precio</td>
+                        <td>@($"${servicio.Precio}")</td>
                         <td>
                             <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerServicio(servicio.Id))">Ver</button>
                             <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarServicio(servicio.Id))">Editar</button>
@@ -117,7 +117,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://usersaly-api-node-js.onrender.com/servicios"
+                "https://gestionsalyapi.onrender.com/servicios"
             );
         }
         catch (Exception ex)
@@ -138,7 +138,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             servicioDetalle = await Http.GetFromJsonAsync<ServicioDTO>(
-                $"https://usersaly-api-node-js.onrender.com/servicios/{id}"
+                $"https://gestionsalyapi.onrender.com/servicios/{id}"
             );
         }
         catch (Exception ex)
@@ -168,7 +168,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.DeleteAsync(
-                $"https://usersaly-api-node-js.onrender.com/servicios/{servicioEliminar.Id}"
+                $"https://gestionsalyapi.onrender.com/servicios/{servicioEliminar.Id}"
             );
 
             if (response.IsSuccessStatusCode)
@@ -177,7 +177,7 @@ else if (servicioEliminar != null)
                 servicioEliminar = null;
                 servicioDetalle = null;
                 await CargarServiciosAsync();
-                Navigation.NavigateTo("/servicios");
+                Navigation.NavigateTo("/servicio/servicios");
             }
             else
             {
@@ -194,12 +194,12 @@ else if (servicioEliminar != null)
     {
         servicioEliminar = null;
         servicioDetalle = null;
-        Navigation.NavigateTo("/servicios");
+        Navigation.NavigateTo("/servicio/servicios");
     }
 
     public class ServicioDTO
     {
-        [JsonPropertyName("id")]
+        [JsonPropertyName("id_servicio")]
         public int Id { get; set; }
 
         [JsonPropertyName("nombre_servicio")]
@@ -209,9 +209,11 @@ else if (servicioEliminar != null)
         public string Descripcion { get; set; }
 
         [JsonPropertyName("duracion")]
-        public string Duracion { get; set; }
+        public int Duracion { get; set; }   // ← corregido
 
         [JsonPropertyName("precio")]
-        public decimal Precio { get; set; }
+        public string Precio { get; set; }  // ← corregido
     }
+
+
 }
