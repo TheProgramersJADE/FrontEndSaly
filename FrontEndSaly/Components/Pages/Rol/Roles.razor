@@ -1,0 +1,93 @@
+﻿@using System.Text.Json.Serialization
+
+@page "/rol/roles"
+
+<PageTitle>Roles</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3> Lista de Roles</h3>
+
+@if (roles == null)
+{
+    <p>Cargando roles...</p>
+}
+else if (!roles.Any())
+{
+    <p>No hay roles registrados.</p>
+}
+else
+{
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre del Rol</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rol in roles)
+            {
+                <tr>
+                    <td>@rol.Id</td>
+                    <td>@rol.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-danger mt-3">@mensaje</div>
+}
+@code {
+
+    private List<RolDTO> roles;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Verificar si hay token
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarRolesAsync();
+    }
+
+    private async Task CargarRolesAsync()
+    {
+        try
+        {
+            // ✅ Agregar el token al encabezado
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // ✅ Consumir el endpoint de roles
+            roles = await Http.GetFromJsonAsync<List<RolDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist/roles"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar roles: {ex.Message}";
+        }
+    }
+
+    public class RolDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+    }
+
+}
