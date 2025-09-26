@@ -1,0 +1,210 @@
+﻿@page "/cita/citas"
+@using System.Text.Json.Serialization
+
+<PageTitle>@tituloSeccion</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>@tituloSeccion</h3>
+
+@if (citaDetalle == null && citaEliminar == null)
+{
+    <button class="btn btn-primary mb-3" @onclick="IrACrearCita">➕ Crear Nueva Cita</button>
+
+    @if (citas == null)
+    {
+        <p>Cargando citas...</p>
+    }
+    else if (!citas.Any())
+    {
+        <p>No hay citas registradas.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Fecha y Hora</th>
+                    <th>Trabajador</th>
+                    <th>Servicio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cita in citas)
+                {
+                    <tr>
+                        <td>@cita.IdCita</td>
+                        <td>@cita.NombreCliente</td>
+                        <td>@cita.TelefonoCliente</td>
+                        <td>@cita.FechaHora.ToString("yyyy-MM-dd HH:mm")</td>
+                        <td>@cita.NombreTrabajador</td>
+                        <td>@cita.IdServicio</td>
+                        <td>
+                            <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerCita(cita.IdCita))">Ver</button>
+                            <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarCita(cita.IdCita))">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(cita))">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+else if (citaDetalle != null && citaEliminar == null)
+{
+    <!-- Panel de detalle -->
+    <div class="card p-3 mb-3 shadow-sm">
+        <p><strong>ID:</strong> @citaDetalle.IdCita</p>
+        <p><strong>Cliente:</strong> @citaDetalle.NombreCliente</p>
+        <p><strong>Teléfono:</strong> @citaDetalle.TelefonoCliente</p>
+        <p><strong>Fecha:</strong> @citaDetalle.FechaHora.ToString("yyyy-MM-dd HH:mm")</p>
+        <p><strong>Trabajador:</strong> @citaDetalle.NombreTrabajador</p>
+        <p><strong>ID Servicio:</strong> @citaDetalle.IdServicio</p>
+
+        <button class="btn btn-primary btn-sm me-2" @onclick="Regresar">Regresar</button>
+    </div>
+}
+else if (citaEliminar != null)
+{
+    <!-- Panel de eliminación -->
+    <div class="card p-3 mb-3 border-danger shadow-sm">
+        <div class="alert alert-warning mb-3">⚠️ ¿Seguro que deseas eliminar esta cita?</div>
+
+        <p><strong>ID:</strong> @citaEliminar.IdCita</p>
+        <p><strong>Cliente:</strong> @citaEliminar.NombreCliente</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn btn-danger btn-sm me-2" @onclick="ConfirmarEliminar">Eliminar</button>
+            <button class="btn btn-secondary btn-sm" @onclick="CancelarEliminar">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mt-3">@mensaje</p>
+}
+
+@code {
+    private List<CitaDTO> citas;
+    private CitaDTO citaDetalle;
+    private CitaDTO citaEliminar;
+    private string mensaje;
+
+    private string tituloSeccion = "Gestión de Citas";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        await CargarCitasAsync();
+    }
+
+    private async Task CargarCitasAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            citas = await Http.GetFromJsonAsync<List<CitaDTO>>("https://gestionsalyapi.onrender.com/citas");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar citas: {ex.Message}";
+        }
+    }
+
+    private void IrACrearCita() => Navigation.NavigateTo("/cita/crear");
+    private void EditarCita(int id) => Navigation.NavigateTo($"/cita/editar/{id}");
+
+    private async Task VerCita(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            citaDetalle = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+            tituloSeccion = "Detalle de la Cita"; //  Cambia el título
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener la cita: {ex.Message}";
+        }
+    }
+
+    private void MostrarConfirmacionEliminar(CitaDTO cita)
+    {
+        citaEliminar = cita;
+        tituloSeccion = "Eliminar Cita"; // Cambia el título
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"https://gestionsalyapi.onrender.com/citas/{citaEliminar.IdCita}");
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Cita eliminada correctamente.";
+                citaEliminar = null;
+                tituloSeccion = "Gestión de Citas"; // Volvemos al título principal
+                await CargarCitasAsync();
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar cita: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        citaEliminar = null;
+        tituloSeccion = "Gestión de Citas"; // ✅ Volvemos al título principal
+    }
+
+    private void Regresar()
+    {
+        citaDetalle = null;
+        tituloSeccion = "Gestión de Citas"; // ✅ Volvemos al título principal
+    }
+
+    public class CitaDTO
+    {
+        [JsonPropertyName("id_cita")]
+        public int IdCita { get; set; }
+
+        [JsonPropertyName("nombre_cliente")]
+        public string NombreCliente { get; set; }
+
+        [JsonPropertyName("telefono_cliente")]
+        public string TelefonoCliente { get; set; }
+
+        [JsonPropertyName("fecha_hora")]
+        public DateTime FechaHora { get; set; }
+
+        [JsonPropertyName("nombre_trabajador")]
+        public string NombreTrabajador { get; set; }
+
+        [JsonPropertyName("id_servicio")]
+        public int IdServicio { get; set; }
+    }
+}

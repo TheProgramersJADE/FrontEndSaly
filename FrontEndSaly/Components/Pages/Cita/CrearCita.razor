@@ -1,0 +1,237 @@
+﻿@page "/cita/crear"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Crear Cita</PageTitle>
+
+<h3 class="mb-4">Crear Nueva Cita</h3>
+
+<div class="card p-4 shadow-sm" style="max-width: 600px;">
+    <div class="mb-3">
+        <label class="form-label">Nombre del Cliente</label>
+        <input class="form-control" @bind="nuevaCita.NombreCliente" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Teléfono del Cliente</label>
+        <input class="form-control" @bind="nuevaCita.TelefonoCliente" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Fecha y Hora</label>
+        <input type="datetime-local" class="form-control"
+               value="@fechaHoraString"
+               @onchange="OnFechaHoraChanged" />
+    </div>
+
+    <!-- Trabajador -->
+    <div class="mb-3">
+        <label class="form-label">Trabajador</label>
+        <select class="form-select" @bind="nuevaCita.NombreTrabajador">
+            <option value="">-- Selecciona un trabajador --</option>
+            @if (trabajadores != null)
+            {
+                @foreach (var t in trabajadores)
+                {
+                    <option value="@t.Username">@t.Username</option>
+                }
+            }
+        </select>
+    </div>
+
+
+    <!-- ✅ Cambiamos input por combo de servicios -->
+    <div class="mb-3">
+        <label class="form-label">Servicio</label>
+        <select class="form-select" @bind="nuevaCita.IdServicio">
+            <option value="">-- Selecciona un servicio --</option>
+            @if (servicios != null)
+            {
+                @foreach (var s in servicios)
+                {
+                    <option value="@s.Id">@s.Nombre_Servicio</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <button class="btn btn-primary" @onclick="CrearCitaAsync">✅ Crear Cita</button>
+        <button class="btn btn-secondary" @onclick="Volver">↩️ Cancelar</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @alertClass mt-3">@mensaje</div>
+}
+
+@code {
+  
+    private CitaDTO nuevaCita = new();
+    private string mensaje;
+    private string alertClass = "alert-info";
+    private string fechaHoraString = DateTime.Now.ToString("yyyy-MM-ddTHH:mm"); // valor inicial
+
+    // Lista para cargar servicios desde la API
+    private List<ServicioDTO> servicios = new();
+
+    // Lista de trabajadores filtrados
+    private List<UsuarioDTO> trabajadores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarServiciosAsync();
+        await CargarTrabajadoresAsync();
+    }
+
+    private void OnFechaHoraChanged(ChangeEventArgs e)
+    {
+        fechaHoraString = e.Value?.ToString() ?? DateTime.Now.ToString("yyyy-MM-ddTHH:mm");
+
+        if (DateTime.TryParse(fechaHoraString, out var fechaHora))
+        {
+            nuevaCita.FechaHora = fechaHora;
+        }
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+    }
+
+    // Cargar trabajadores
+    private async Task CargarTrabajadoresAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var todosUsuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist"
+            );
+
+            // Filtrar solo los que tengan role_id = 2 (trabajadores)
+            trabajadores = todosUsuarios.Where(u => u.Role_Id == 2).ToList();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar trabajadores: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+    }
+
+    private async Task CrearCitaAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/citas", nuevaCita);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Cita creada exitosamente.";
+                alertClass = "alert-success";
+
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/cita/citas");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error al crear cita: {error}";
+                alertClass = "alert-danger";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+            alertClass = "alert-danger";
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/cita/citas");
+    }
+
+    public class CitaDTO
+    {
+        [JsonPropertyName("nombre_cliente")]
+        public string NombreCliente { get; set; }
+
+        [JsonPropertyName("telefono_cliente")]
+        public string TelefonoCliente { get; set; }
+
+        [JsonPropertyName("fecha_hora")]
+        public DateTime FechaHora { get; set; }
+
+        [JsonPropertyName("nombre_trabajador")]
+        public string NombreTrabajador { get; set; }
+
+        [JsonPropertyName("id_servicio")]
+        public int IdServicio { get; set; }
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+
+    public class UsuarioDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("username")]
+        public string Username { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+
+        [JsonPropertyName("role_id")]
+        public int Role_Id { get; set; }
+    }
+
+
+}
