@@ -11,7 +11,15 @@
 
 @if (citaDetalle == null && citaEliminar == null)
 {
-    <button class="btn btn-primary mb-3" @onclick="IrACrearCita">➕ Crear Nueva Cita</button>
+    <!-- búsqueda por ID -->
+    <div class="input-group mb-3" style="max-width: 350px;">
+        <input type="number" class="form-control" placeholder="Buscar por ID de cita..."
+               @bind="buscarId" @bind:event="oninput" />
+        <button class="btn btn-outline-secondary" @onclick="BuscarPorId">Buscar</button>
+        <button class="btn btn-outline-danger" @onclick="LimpiarBusqueda">Limpiar</button>
+    </div>
+
+    <button class="btn btn-primary mb-3" @onclick="IrACrearCita">Crear Nueva Cita</button>
 
     @if (citas == null)
     {
@@ -97,6 +105,8 @@ else if (citaEliminar != null)
     private CitaDTO citaEliminar;
     private string mensaje;
 
+    private int? buscarId;
+
     private string tituloSeccion = "Gestión de Citas";
 
     protected override async Task OnInitializedAsync()
@@ -124,6 +134,46 @@ else if (citaEliminar != null)
         {
             mensaje = $"🚨 Error al cargar citas: {ex.Message}";
         }
+    }
+
+    private async Task BuscarPorId()
+    {
+        if (buscarId == null || buscarId <= 0)
+        {
+            mensaje = "⚠️ Ingresa un ID válido para buscar.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var cita = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{buscarId}");
+            if (cita != null)
+            {
+                citas = new List<CitaDTO> { cita };
+                mensaje = $"✅ Resultado encontrado.";
+            }
+            else
+            {
+                citas = new List<CitaDTO>();
+                mensaje = $"❌ No se encontró ninguna cita con ID {buscarId}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar cita: {ex.Message}";
+        }
+    }
+
+    // ✅ Restablecer el listado original
+    private async Task LimpiarBusqueda()
+    {
+        buscarId = null;
+        mensaje = string.Empty;
+        await CargarCitasAsync();
     }
 
     private void IrACrearCita() => Navigation.NavigateTo("/cita/crear");
