@@ -25,7 +25,9 @@
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
-    <p class="mensaje">@mensaje</p>
+    <div class="alerta">
+        @mensaje
+    </div>
 }
 
 <div class="mt-3 text-center">
@@ -49,7 +51,7 @@
         max-width: 400px;
         margin: 0 auto;
         padding: 2rem;
-        background-color: #f7e6fa; /* rosa muy suave */
+        background-color: #f7e6fa;
         border-radius: 16px;
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
     }
@@ -57,7 +59,7 @@
     /* Inputs estilizados */
     .styled-input {
         border-radius: 12px;
-        border: 2px solid #a569bd; /* morado */
+        border: 2px solid #a569bd;
         padding: 0.7rem 1rem;
         margin-bottom: 1.2rem;
         transition: all 0.3s ease;
@@ -68,7 +70,7 @@
 
         .styled-input:focus {
             outline: none;
-            box-shadow: 0 0 0 0.2rem #9b59b6; /* sombra morada */
+            box-shadow: 0 0 0 0.2rem #9b59b6;
             border-color: #9b59b6;
         }
 
@@ -85,31 +87,32 @@
         font-size: 1rem;
     }
 
-        /* Botón primario */
         .styled-btn.primary {
             background-color: #a569bd;
             border: none;
         }
 
-        /* Botón secundario */
         .styled-btn.secondary {
             background-color: #d9a3e0;
             border: none;
         }
 
-        /* Hover botones */
         .styled-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 16px rgba(0,0,0,0.25);
             color: #111;
         }
 
-    /* Mensaje */
-    .mensaje {
-        font-weight: bold;
+    /* Alerta amigable */
+    .alerta {
         margin-top: 1rem;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        font-weight: bold;
+        color: #fff;
+        background-color: #a569bd; /* rojo agradable */
         text-align: center;
-        color: #6f2c6f;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
 
     /* Labels */
@@ -128,6 +131,23 @@
 
     private async Task LoginAsync()
     {
+        // Validaciones antes de llamar a la API
+        if (string.IsNullOrWhiteSpace(loginModel.Email) && string.IsNullOrWhiteSpace(loginModel.Password))
+        {
+            mensaje = "⚠️ Por favor ingrese sus credenciales";
+            return;
+        }
+        else if (string.IsNullOrWhiteSpace(loginModel.Email))
+        {
+            mensaje = "⚠️ Por favor ingrese su email";
+            return;
+        }
+        else if (string.IsNullOrWhiteSpace(loginModel.Password))
+        {
+            mensaje = "⚠️ Por favor ingrese su contraseña";
+            return;
+        }
+
         try
         {
             var response = await Http.PostAsJsonAsync("https://usersaly-api-node-js.onrender.com/usuarioslist/login", loginModel);
@@ -141,8 +161,8 @@
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                mensaje = $"❌ Error de login: {errorContent}";
+                // Mostrar mensaje amigable si credenciales incorrectas
+                mensaje = "❌ Credenciales incorrectas, intente nuevamente por favor";
             }
         }
         catch (Exception ex)

@@ -1,66 +1,152 @@
-﻿@using System.Text.Json.Serialization;
+﻿
+
+
+
+
+@using System.Text.Json.Serialization;
 
 @page "/crearusuario"
 @page "/crearusuario/{from?}"
 
-
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3>Crear Usuario</h3>
+<h3 class="form-title">Crear Usuario</h3>
 
-<EditForm Model="nuevoUsuario" OnValidSubmit="CrearUsuarioAsync">
+<EditForm Model="nuevoUsuario" OnValidSubmit="CrearUsuarioAsync" class="login-form">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div>
+    <div class="form-group">
         <label>Username:</label>
-        <InputText @bind-Value="nuevoUsuario.Username" class="form-control" />
+        <InputText @bind-Value="nuevoUsuario.Username" class="form-control styled-input" />
     </div>
 
-    <div>
+    <div class="form-group">
         <label>Email:</label>
-        <InputText @bind-Value="nuevoUsuario.Email" class="form-control" />
+        <InputText @bind-Value="nuevoUsuario.Email" class="form-control styled-input" />
     </div>
 
-    <div>
+    <div class="form-group">
         <label>Password:</label>
-        <InputText @bind-Value="nuevoUsuario.Password" class="form-control" type="password" />
+        <InputText @bind-Value="nuevoUsuario.Password" class="form-control styled-input" type="password" />
     </div>
 
-    <div>
+    <div class="form-group">
         <label>Rol:</label>
-        <InputSelect @bind-Value="nuevoUsuario.Role_Id" class="form-control">
+        <InputSelect @bind-Value="nuevoUsuario.Role_Id" class="form-control styled-input">
             <option value="1">Cliente</option>
             <option value="2">Trabajador</option>
             <option value="3">Administrador</option>
         </InputSelect>
     </div>
 
-    @* <div>
-        <label>Role ID:</label>
-        <InputNumber @bind-Value="nuevoUsuario.Role_Id" class="form-control" />
-    </div> *@
-
-    <button type="button" class="btn btn-secondary me-2" @onclick="VolverAUsuarios">Volver</button>
-    <button type="submit" class="btn btn-primary">Crear Usuario</button>
+    <div class="text-center">
+        <button type="button" class="btn styled-btn secondary" @onclick="VolverAUsuarios">Volver</button>
+        <button type="submit" class="btn styled-btn primary">Crear Usuario</button>
+    </div>
 </EditForm>
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
-    <p>@mensaje</p>
+    <p class="mensaje">@mensaje</p>
 }
+
+<style>
+    /* Título */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    /* Contenedor */
+    .login-form {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Inputs */
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    /* Botones */
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.7rem 1.5rem;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+            color: #111;
+        }
+
+    /* Mensaje */
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    /* Labels */
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+        display: block;
+        color: #111;
+        font-size: 1.05rem;
+    }
+</style>
 
 @code {
     private UsuarioRequest nuevoUsuario = new UsuarioRequest();
     private string mensaje;
 
     [Parameter]
-    public string? from { get; set; } // ✅ Saber desde dónde vino el usuario
+    public string? from { get; set; }
 
     private void VolverAUsuarios()
     {
-        // ✅ Cancelar también respeta desde dónde vino
         if (from == "gestion")
             Navigation.NavigateTo("/counter");
         else
@@ -76,9 +162,8 @@
             if (response.IsSuccessStatusCode)
             {
                 mensaje = "✅ Usuario creado con éxito.";
-                nuevoUsuario = new UsuarioRequest(); // limpia el formulario
+                nuevoUsuario = new UsuarioRequest();
 
-                // ✅ Si vino desde gestión, vuelve a gestión. Si no, al login
                 if (from == "gestion")
                     Navigation.NavigateTo("/counter");
                 else
@@ -108,7 +193,7 @@
         public string Password { get; set; }
 
         [JsonPropertyName("role_id")]
-        public int Role_Id { get; set; } = 1; // Valor por defecto a Cliente
+        public int Role_Id { get; set; } = 1;
     }
 }
-
+ 
