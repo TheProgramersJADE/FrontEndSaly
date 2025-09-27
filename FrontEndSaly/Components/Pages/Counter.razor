@@ -7,6 +7,392 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<h3 class="form-title">Gestión de Usuarios</h3>
+
+@if (usuarioDetalle == null && usuarioEliminar == null)
+{
+    <!-- Tabla y búsqueda de usuarios -->
+    <div class="login-form">
+        <div class="mb-3 d-flex align-items-center flex-wrap">
+            <input type="text" class="form-control styled-input me-2 mb-2" placeholder="Buscar por email..." @bind="filtroEmail" />
+
+            <select class="form-select styled-input me-2 mb-2" @bind="filtroRoleId">
+                <option value="">Todos los roles</option>
+                <option value="1">Cliente</option>
+                <option value="2">Trabajador</option>
+                <option value="3">Administrador</option>
+            </select>
+
+            <button class="btn styled-btn primary mb-2" @onclick="BuscarUsuariosAsync">Buscar</button>
+        </div>
+
+        <button class="btn styled-btn secondary mb-3" @onclick="IrACrearUsuario">Crear Usuario</button>
+
+        @if (usuarios == null)
+        {
+            <p class="mensaje">Cargando usuarios...</p>
+        }
+        else if (!usuarios.Any())
+        {
+            <p class="mensaje">No hay usuarios registrados.</p>
+        }
+        else
+        {
+            <table class="table table-striped styled-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var usuario in usuarios.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
+                    {
+                        <tr>
+                            <td>@usuario.Id</td>
+                            <td>@usuario.Username</td>
+                            <td>@usuario.Email</td>
+                            <td>
+                                @(
+                                    usuario.Role_Id == 3 ? "Administrador" :
+                                    usuario.Role_Id == 2 ? "Trabajador" :
+                                    usuario.Role_Id == 1 ? "Cliente" : "Desconocido"
+                                )
+                            </td>
+                            <td>
+                                <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
+                                <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
+                                <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(usuario))">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Controles de paginación -->
+            <div class="d-flex justify-content-center align-items-center mt-3">
+                <button class="btn styled-btn secondary me-2" @onclick="PaginaAnterior" disabled="@(paginaActual == 1)">Anterior</button>
+                <span><strong>Página @paginaActual de @totalPaginas</strong></span>
+                <button class="btn styled-btn secondary ms-2" @onclick="PaginaSiguiente" disabled="@(paginaActual == totalPaginas)">Siguiente</button>
+            </div>
+        }
+    </div>
+}
+else if (usuarioDetalle != null && usuarioEliminar == null)
+{
+    <div class="login-form">
+        <div class="card p-3 mb-3">
+            <p><strong>ID:</strong> @usuarioDetalle.Id</p>
+            <p><strong>Username:</strong> @usuarioDetalle.Username</p>
+            <p><strong>Email:</strong> @usuarioDetalle.Email</p>
+            <p>
+                <strong>Rol:</strong>
+                @(
+                    usuarioDetalle.Role_Id == 3 ? "Administrador" :
+                    usuarioDetalle.Role_Id == 2 ? "Trabajador" :
+                    usuarioDetalle.Role_Id == 1 ? "Cliente" : "Desconocido"
+                )
+            </p>
+        </div>
+
+        <button class="btn styled-btn secondary" @onclick="Regresar">Regresar</button>
+    </div>
+}
+else if (usuarioEliminar != null)
+{
+    <div class="login-form border-danger">
+        <div class="alert alert-warning mb-3" role="alert">
+            ⚠️ ¿Estás seguro que deseas eliminar este usuario?
+        </div>
+
+        <p><strong>ID:</strong> @usuarioEliminar.Id</p>
+        <p><strong>Username:</strong> @usuarioEliminar.Username</p>
+        <p><strong>Email:</strong> @usuarioEliminar.Email</p>
+        <p>
+            <strong>Rol:</strong> @(
+                usuarioEliminar.Role_Id == 3 ? "Administrador" :
+                usuarioEliminar.Role_Id == 2 ? "Trabajador" :
+                usuarioEliminar.Role_Id == 1 ? "Cliente" : "Desconocido"
+            )
+        </p>
+
+        <div class="d-flex mt-3">
+            <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
+            <button class="btn styled-btn secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 800px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+    .styled-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem #9b59b6;
+        border-color: #9b59b6;
+    }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+    .styled-btn.primary {
+        background-color: #a569bd;
+        border: none;
+    }
+
+    .styled-btn.secondary {
+        background-color: #d9a3e0;
+        border: none;
+    }
+
+    .styled-btn.info {
+        background-color: #85c1e9;
+        border: none;
+    }
+
+    .styled-btn.warning {
+        background-color: #f5b041;
+        border: none;
+    }
+
+    .styled-btn.danger {
+        background-color: #e74c3c;
+        border: none;
+    }
+
+    .styled-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+    }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    .styled-table th, .styled-table td {
+        vertical-align: middle;
+    }
+</style>
+
+@code {
+    private List<UsuarioDTO> usuarios;
+    private string mensaje;
+    private string filtroEmail = string.Empty;
+    private string filtroRoleId = string.Empty;
+
+    private UsuarioDTO usuarioDetalle = null;
+    private UsuarioDTO usuarioEliminar = null;
+
+    // 📌 Paginación
+    private int paginaActual = 1;
+    private int tamanoPagina = 5;
+    private int totalPaginas => (int)Math.Ceiling((double)(usuarios?.Count() ?? 0) / tamanoPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarUsuariosAsync();
+    }
+
+    private async Task CargarUsuariosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar usuarios: {ex.Message}";
+        }
+    }
+
+    private async Task BuscarUsuariosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(filtroEmail)) query.Add($"email={filtroEmail}");
+            if (!string.IsNullOrWhiteSpace(filtroRoleId)) query.Add($"role_id={filtroRoleId}");
+            var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
+
+            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
+                $"https://usersaly-api-node-js.onrender.com/usuarioslist/buscar{queryString}"
+            );
+            paginaActual = 1; // Reinicia a la primera página al buscar
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar usuarios: {ex.Message}";
+        }
+    }
+
+    private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario/gestion");
+    private void EditarUsuario(int id) => Navigation.NavigateTo($"/usuarios/editar/{id}");
+
+    private async Task VerUsuario(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            usuarioDetalle = await Http.GetFromJsonAsync<UsuarioDTO>(
+                $"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener detalle del usuario: {ex.Message}";
+        }
+    }
+
+    private void Regresar()
+    {
+        usuarioDetalle = null;
+        usuarioEliminar = null;
+    }
+
+    private void MostrarConfirmacionEliminar(UsuarioDTO usuario)
+    {
+        usuarioEliminar = usuario;
+        usuarioDetalle = usuario;
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{usuarioEliminar.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Usuario eliminado correctamente.";
+                usuarioEliminar = null;
+                usuarioDetalle = null;
+                await CargarUsuariosAsync();
+                Navigation.NavigateTo("/counter");
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar usuario: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        usuarioEliminar = null;
+        usuarioDetalle = null;
+        Navigation.NavigateTo("/counter");
+    }
+
+    // 📌 Métodos de paginación
+    private void PaginaAnterior()
+    {
+        if (paginaActual > 1) paginaActual--;
+    }
+
+    private void PaginaSiguiente()
+    {
+        if (paginaActual < totalPaginas) paginaActual++;
+    }
+
+    public class UsuarioDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("username")]
+        public string Username { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+
+        [JsonPropertyName("role_id")]
+        public int Role_Id { get; set; }
+    }
+}
+
+
+
+
+
+@* @page "/counter"
+@using System.Text.Json.Serialization
+
+<PageTitle>Usuarios</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <h3>Gestión de Usuarios</h3>
 
 @if (usuarioDetalle == null && usuarioEliminar == null)
@@ -42,7 +428,7 @@
                     <th>ID</th>
                     <th>Username</th>
                     <th>Email</th>
-                    <th>Role ID</th>
+                    <th>Rol</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -53,8 +439,14 @@
                         <td>@usuario.Id</td>
                         <td>@usuario.Username</td>
                         <td>@usuario.Email</td>
-                        <td>@usuario.Role_Id</td>
                         <td>
+                            @(
+                              usuario.Role_Id == 3 ? "Administrador" :
+                              usuario.Role_Id == 2 ? "Trabajador" :
+                              usuario.Role_Id == 1 ? "Cliente" : "Desconocido"
+                              )
+                        </td>
+                    <td>
                             <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
                             <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
                             <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(usuario))">Eliminar</button>
@@ -72,7 +464,13 @@ else if (usuarioDetalle != null && usuarioEliminar == null)
         <p><strong>ID:</strong> @usuarioDetalle.Id</p>
         <p><strong>Username:</strong> @usuarioDetalle.Username</p>
         <p><strong>Email:</strong> @usuarioDetalle.Email</p>
-        <p><strong>Role ID:</strong> @usuarioDetalle.Role_Id</p>
+        <p><strong>Rol:</strong> 
+            @(
+            usuarioDetalle.Role_Id == 3 ? "Administrador" :
+            usuarioDetalle.Role_Id == 2 ? "Trabajador" :
+            usuarioDetalle.Role_Id == 1 ? "Cliente" : "Desconocido"
+             )
+        </p>
     </div>
 
     <button class="btn btn-primary" @onclick="Regresar">Regresar</button>
@@ -88,7 +486,13 @@ else if (usuarioEliminar != null)
         <p><strong>ID:</strong> @usuarioEliminar.Id</p>
         <p><strong>Username:</strong> @usuarioEliminar.Username</p>
         <p><strong>Email:</strong> @usuarioEliminar.Email</p>
-        <p><strong>Role ID:</strong> @usuarioEliminar.Role_Id</p>
+        <p>
+            <strong>Rol:</strong> @(
+            usuarioEliminar.Role_Id == 3 ? "Administrador" :
+            usuarioEliminar.Role_Id == 2 ? "Trabajador" :
+            usuarioEliminar.Role_Id == 1 ? "Cliente" : "Desconocido"
+                )
+        </p>
 
         <div class="d-flex mt-3">
             <button class="btn btn-danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
@@ -246,3 +650,4 @@ else if (usuarioEliminar != null)
         public int Role_Id { get; set; }
     }
 }
+ *@

@@ -8,6 +8,264 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<h3 class="form-title">Lista de Roles</h3>
+
+@if (roles == null)
+{
+    <p>Cargando roles...</p>
+}
+else if (!roles.Any())
+{
+    <p>No hay roles registrados.</p>
+}
+else
+{
+    <div class="roles-table-container">
+        <table class="table table-striped styled-table mt-3">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre del Rol</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var rol in roles)
+                {
+                    <tr>
+                        <td>@rol.Id</td>
+                        <td>@rol.Name</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert mensaje">@mensaje</div>
+}
+
+<style>
+    /* Título */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    /* Contenedor de tabla */
+    .roles-table-container {
+        width: 100%; /* 🔥 ahora ocupa todo el ancho */
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f7e6fa; /* rosa muy suave */
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        overflow-x: auto; /* 🔥 permite scroll horizontal si hay muchas columnas */
+    }
+
+    /* Tabla estilizada */
+    .styled-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-weight: bold;
+        color: #111;
+    }
+
+        .styled-table th, .styled-table td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 2px solid #a569bd; /* línea morada */
+        }
+
+        .styled-table thead {
+            background-color: #d9a3e0; /* morado claro */
+            color: #111;
+        }
+
+        .styled-table tbody tr:hover {
+            background-color: #f0c9f0;
+        }
+
+    /* Mensaje */
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+</style>
+
+@code {
+    private List<RolDTO> roles;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarRolesAsync();
+    }
+
+    private async Task CargarRolesAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            roles = await Http.GetFromJsonAsync<List<RolDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist/roles"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar roles: {ex.Message}";
+        }
+    }
+
+    public class RolDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+    }
+}
+
+
+
+
+@* @using System.Text.Json.Serialization
+
+@page "/rol/roles"
+
+<PageTitle>Roles</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4">
+        <h2 class="mb-4 text-center text-primary fw-bold">📋 Lista de Roles</h2>
+
+        @if (roles == null)
+        {
+            <div class="alert alert-info text-center shadow-sm">
+                ⏳ Cargando roles...
+            </div>
+        }
+        else if (!roles.Any())
+        {
+            <div class="alert alert-warning text-center shadow-sm">
+                ⚠️ No hay roles registrados.
+            </div>
+        }
+        else
+        {
+            <table class="table table-hover table-bordered shadow-sm">
+                <thead class="table-light">
+                    <tr class="text-center">
+                        <th>ID</th>
+                        <th>Nombre del Rol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var rol in roles)
+                    {
+                        <tr>
+                            <td class="text-center fw-bold">@rol.Id</td>
+                            <td>@rol.Name</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        @if (!string.IsNullOrEmpty(mensaje))
+        {
+            <div class="alert alert-danger mt-3 shadow-sm text-center">@mensaje</div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<RolDTO> roles;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // ✅ Verificar si hay token
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarRolesAsync();
+    }
+
+    private async Task CargarRolesAsync()
+    {
+        try
+        {
+            // ✅ Agregar el token al encabezado
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // ✅ Consumir el endpoint de roles
+            roles = await Http.GetFromJsonAsync<List<RolDTO>>(
+                "https://usersaly-api-node-js.onrender.com/usuarioslist/roles"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar roles: {ex.Message}";
+        }
+    }
+
+    public class RolDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+    }
+}
+ *@
+
+
+
+
+
+
+
+@* @using System.Text.Json.Serialization
+
+@page "/rol/roles"
+
+<PageTitle>Roles</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <h3> Lista de Roles</h3>
 
 @if (roles == null)
@@ -91,3 +349,4 @@ else
     }
 
 }
+ *@

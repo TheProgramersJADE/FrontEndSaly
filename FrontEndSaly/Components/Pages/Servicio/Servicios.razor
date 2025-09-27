@@ -7,6 +7,726 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<h3 class="form-title">Gestión de Servicios</h3>
+
+@if (servicioDetalle == null && servicioEliminar == null)
+{
+    <div class="login-form">
+        <div class="mb-3 d-flex flex-wrap align-items-center">
+            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID" @bind="busquedaId" />
+            <button class="btn styled-btn primary mb-2 me-2" @onclick="BuscarPorId">Buscar</button>
+            <button class="btn styled-btn secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
+        </div>
+
+        <button class="btn styled-btn primary mb-3" @onclick="IrACrearServicio">Crear Servicio</button>
+
+        @if (servicios == null)
+        {
+            <p class="mensaje">Cargando servicios...</p>
+        }
+        else if (!servicios.Any())
+        {
+            <p class="mensaje">No hay servicios registrados.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table styled-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Duración</th>
+                            <th>Precio</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var servicio in servicios.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
+                        {
+                            <tr>
+                                <td>@servicio.Id</td>
+                                <td>@servicio.Nombre_Servicio</td>
+                                <td>@servicio.Descripcion</td>
+                                <td>@servicio.Duracion</td>
+                                <td>@($"${servicio.Precio}")</td>
+                                <td>
+                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerServicio(servicio.Id))">Ver</button>
+                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarServicio(servicio.Id))">Editar</button>
+                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(servicio))">Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Controles de paginación -->
+            <div class="d-flex justify-content-center align-items-center mt-3">
+                <button class="btn styled-btn secondary me-2" @onclick="PaginaAnterior" disabled="@(paginaActual == 1)">Anterior</button>
+                <span><strong>Página @paginaActual de @totalPaginas</strong></span>
+                <button class="btn styled-btn secondary ms-2" @onclick="PaginaSiguiente" disabled="@(paginaActual == totalPaginas)">Siguiente</button>
+            </div>
+        }
+    </div>
+}
+else if (servicioDetalle != null && servicioEliminar == null)
+{
+    <div class="login-form">
+        <div class="card p-3 mb-3">
+            <p><strong>ID:</strong> @servicioDetalle.Id</p>
+            <p><strong>Nombre:</strong> @servicioDetalle.Nombre_Servicio</p>
+            <p><strong>Descripción:</strong> @servicioDetalle.Descripcion</p>
+            <p><strong>Duración:</strong> @servicioDetalle.Duracion</p>
+            <p><strong>Precio:</strong> $@servicioDetalle.Precio</p>
+        </div>
+        <button class="btn styled-btn secondary" @onclick="Regresar">Regresar</button>
+    </div>
+}
+else if (servicioEliminar != null)
+{
+    <div class="login-form border-danger">
+        <div class="alert alert-warning mb-3" role="alert">
+            ⚠️ ¿Estás seguro que deseas eliminar este servicio?
+        </div>
+
+        <p><strong>ID:</strong> @servicioEliminar.Id</p>
+        <p><strong>Nombre:</strong> @servicioEliminar.Nombre_Servicio</p>
+        <p><strong>Descripción:</strong> @servicioEliminar.Descripcion</p>
+        <p><strong>Duración:</strong> @servicioEliminar.Duracion</p>
+        <p><strong>Precio:</strong> $@servicioEliminar.Precio</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
+            <button class="btn styled-btn secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 900px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn.info {
+            background-color: #85c1e9;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn.warning {
+            background-color: #f5b041;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn.danger {
+            background-color: #e74c3c;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+        }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+        .styled-table th {
+            background-color: #a569bd;
+            color: #fff;
+            text-align: center;
+            padding: 0.8rem;
+        }
+
+        .styled-table td {
+            padding: 0.8rem;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
+
+    .styled-card {
+        border-radius: 16px;
+        background-color: #f7e6fa;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    .styled-table th, .styled-table td {
+        vertical-align: middle;
+    }
+</style>
+
+@code {
+    private List<ServicioDTO> servicios;
+    private string mensaje;
+
+    private ServicioDTO servicioDetalle = null;
+    private ServicioDTO servicioEliminar = null;
+
+    private int? busquedaId;
+
+    // 🔹 Variables de paginación
+    private int paginaActual = 1;
+    private int tamanoPagina = 5; // cantidad de registros por página
+    private int totalPaginas => (int)Math.Ceiling((double)(servicios?.Count ?? 0) / tamanoPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarServiciosAsync();
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
+            );
+
+            paginaActual = 1; // reiniciar a la primera página al recargar
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+        }
+    }
+
+    private void IrACrearServicio() => Navigation.NavigateTo("/servicios/crear");
+    private void EditarServicio(int id) => Navigation.NavigateTo($"/servicios/editar/{id}");
+
+    private async Task VerServicio(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicioDetalle = await Http.GetFromJsonAsync<ServicioDTO>(
+                $"https://gestionsalyapi.onrender.com/servicios/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener detalle del servicio: {ex.Message}";
+        }
+    }
+
+    private void Regresar()
+    {
+        servicioDetalle = null;
+        servicioEliminar = null;
+    }
+
+    private void MostrarConfirmacionEliminar(ServicioDTO servicio)
+    {
+        servicioEliminar = servicio;
+        servicioDetalle = servicio;
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync(
+                $"https://gestionsalyapi.onrender.com/servicios/{servicioEliminar.Id}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Servicio eliminado correctamente.";
+                servicioEliminar = null;
+                servicioDetalle = null;
+                await CargarServiciosAsync();
+                Navigation.NavigateTo("/servicio/servicios");
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar servicio: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        servicioEliminar = null;
+        servicioDetalle = null;
+        Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    private async Task BuscarPorId()
+    {
+        if (busquedaId == null || busquedaId <= 0)
+        {
+            mensaje = "⚠️ Ingrese un ID válido para buscar.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var servicio = await Http.GetFromJsonAsync<ServicioDTO>(
+                $"https://gestionsalyapi.onrender.com/servicios/{busquedaId}"
+            );
+
+            if (servicio != null)
+            {
+                servicios = new List<ServicioDTO> { servicio };
+                paginaActual = 1;
+                mensaje = $"✅ Servicio con ID {busquedaId} encontrado.";
+            }
+            else
+            {
+                servicios = new List<ServicioDTO>();
+                mensaje = $"⚠️ No se encontró ningún servicio con ID {busquedaId}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar servicio: {ex.Message}";
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        busquedaId = null;
+        mensaje = "";
+        await CargarServiciosAsync();
+    }
+
+    // 🔹 Métodos de paginación
+    private void PaginaAnterior()
+    {
+        if (paginaActual > 1)
+            paginaActual--;
+    }
+
+    private void PaginaSiguiente()
+    {
+        if (paginaActual < totalPaginas)
+            paginaActual++;
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+}
+
+
+
+@* @page "/servicio/servicios"
+@using System.Text.Json.Serialization
+
+<PageTitle>Gestión de Servicios</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="container mt-4">
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-header bg-primary text-white text-center fs-4 fw-bold">
+            Gestión de Servicios
+        </div>
+        <div class="card-body">
+
+            @if (servicioDetalle == null && servicioEliminar == null)
+            {
+                <!-- Botón de crear -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <button class="btn btn-success shadow-sm" @onclick="IrACrearServicio">
+                        ➕ Crear Servicio
+                    </button>
+                </div>
+
+                <!-- 🔍 Filtro de búsqueda -->
+                <div class="input-group mb-4" style="max-width: 400px;">
+                    <input type="number" class="form-control border-primary shadow-sm"
+                           placeholder="Buscar por ID" @bind="busquedaId" />
+                    <button class="btn btn-outline-primary" @onclick="BuscarPorId">🔍 Buscar</button>
+                    <button class="btn btn-outline-secondary" @onclick="LimpiarBusqueda">❌ Limpiar</button>
+                </div>
+
+                @if (servicios == null)
+                {
+                    <div class="alert alert-info text-center">⏳ Cargando servicios...</div>
+                }
+                else if (!servicios.Any())
+                {
+                    <div class="alert alert-warning text-center">⚠️ No hay servicios registrados.</div>
+                }
+                else
+                {
+                    <table class="table table-hover table-bordered shadow-sm">
+                        <thead class="table-primary text-center">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Duración</th>
+                                <th>Precio</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="align-middle">
+                            @foreach (var servicio in servicios)
+                            {
+                                <tr>
+                                    <td class="text-center fw-bold">@servicio.Id</td>
+                                    <td>@servicio.Nombre_Servicio</td>
+                                    <td>@servicio.Descripcion</td>
+                                    <td class="text-center">@servicio.Duracion min</td>
+                                    <td class="text-success fw-semibold">@($"${servicio.Precio}")</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-info btn-sm me-1 shadow-sm" @onclick="@(() => VerServicio(servicio.Id))">👁 Ver</button>
+                                        <button class="btn btn-warning btn-sm me-1 shadow-sm" @onclick="@(() => EditarServicio(servicio.Id))">✏️ Editar</button>
+                                        <button class="btn btn-danger btn-sm shadow-sm" @onclick="@(() => MostrarConfirmacionEliminar(servicio))">🗑 Eliminar</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            }
+            else if (servicioDetalle != null && servicioEliminar == null)
+            {
+                <div class="card border-primary shadow-sm mb-3">
+                    <div class="card-header bg-info text-white fw-bold">📋 Detalle del Servicio</div>
+                    <div class="card-body">
+                        <p><strong>ID:</strong> @servicioDetalle.Id</p>
+                        <p><strong>Nombre:</strong> @servicioDetalle.Nombre_Servicio</p>
+                        <p><strong>Descripción:</strong> @servicioDetalle.Descripcion</p>
+                        <p><strong>Duración:</strong> @servicioDetalle.Duracion min</p>
+                        <p><strong>Precio:</strong> <span class="text-success fw-semibold">$@servicioDetalle.Precio</span></p>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary shadow-sm" @onclick="Regresar">⬅️ Regresar</button>
+            }
+            else if (servicioEliminar != null)
+            {
+                <div class="card border-danger shadow-sm mb-3">
+                    <div class="card-header bg-danger text-white fw-bold">⚠️ Confirmar Eliminación</div>
+                    <div class="card-body">
+                        <p><strong>ID:</strong> @servicioEliminar.Id</p>
+                        <p><strong>Nombre:</strong> @servicioEliminar.Nombre_Servicio</p>
+                        <p><strong>Precio:</strong> <span class="text-danger fw-semibold">$@servicioEliminar.Precio</span></p>
+
+                        <div class="d-flex mt-3">
+                            <button class="btn btn-danger btn-sm me-2 shadow-sm" @onclick="ConfirmarEliminar">🗑 ELIMINAR</button>
+                            <button class="btn btn-secondary btn-sm shadow-sm" @onclick="CancelarEliminar">✖ CANCELAR</button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(mensaje))
+            {
+                <div class="alert alert-info mt-3 shadow-sm">@mensaje</div>
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ServicioDTO> servicios;
+    private string mensaje;
+
+    private ServicioDTO servicioDetalle = null;
+    private ServicioDTO servicioEliminar = null;
+
+    private int? busquedaId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarServiciosAsync();
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+        }
+    }
+
+    private void IrACrearServicio() => Navigation.NavigateTo("/servicios/crear");
+    private void EditarServicio(int id) => Navigation.NavigateTo($"/servicios/editar/{id}");
+
+    private async Task VerServicio(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicioDetalle = await Http.GetFromJsonAsync<ServicioDTO>(
+                $"https://gestionsalyapi.onrender.com/servicios/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener detalle del servicio: {ex.Message}";
+        }
+    }
+
+    private void Regresar()
+    {
+        servicioDetalle = null;
+        servicioEliminar = null;
+    }
+
+    private void MostrarConfirmacionEliminar(ServicioDTO servicio)
+    {
+        servicioEliminar = servicio;
+        servicioDetalle = servicio;
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync(
+                $"https://gestionsalyapi.onrender.com/servicios/{servicioEliminar.Id}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Servicio eliminado correctamente.";
+                servicioEliminar = null;
+                servicioDetalle = null;
+                await CargarServiciosAsync();
+                Navigation.NavigateTo("/servicio/servicios");
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar servicio: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        servicioEliminar = null;
+        servicioDetalle = null;
+        Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    private async Task BuscarPorId()
+    {
+        if (busquedaId == null || busquedaId <= 0)
+        {
+            mensaje = "⚠️ Ingrese un ID válido para buscar.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var servicio = await Http.GetFromJsonAsync<ServicioDTO>(
+                $"https://gestionsalyapi.onrender.com/servicios/{busquedaId}"
+            );
+
+            if (servicio != null)
+            {
+                servicios = new List<ServicioDTO> { servicio };
+                mensaje = $"✅ Servicio con ID {busquedaId} encontrado.";
+            }
+            else
+            {
+                servicios = new List<ServicioDTO>();
+                mensaje = $"⚠️ No se encontró ningún servicio con ID {busquedaId}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar servicio: {ex.Message}";
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        busquedaId = null;
+        mensaje = "";
+        await CargarServiciosAsync();
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+} *@
+
+
+
+
+
+
+
+
+
+@* @page "/servicio/servicios"
+@using System.Text.Json.Serialization
+
+<PageTitle>Gestión de Servicios</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <h3>Gestión de Servicios</h3>
 
 @if (servicioDetalle == null && servicioEliminar == null)
@@ -270,3 +990,4 @@ else if (servicioEliminar != null)
 
 
 }
+ *@
