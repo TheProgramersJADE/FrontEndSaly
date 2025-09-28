@@ -1,0 +1,292 @@
+﻿@page "/ServiciosTrabajador/servitrabajador"
+@using System.Text.Json.Serialization
+@using System.IdentityModel.Tokens.Jwt
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<PageTitle>Gestión de Servicios - Trabajador</PageTitle>
+
+<h3>Gestión de Servicios Asignados</h3>
+
+@if (detalle == null && eliminar == null)
+{
+    <button class="btn btn-primary mb-3" @onclick="IrACrear">Asignar Servicio</button>
+
+    <div class="input-group mb-3" style="max-width: 300px;">
+        <input type="number" class="form-control" placeholder="Buscar por ID" @bind="busquedaId" />
+        <button class="btn btn-outline-primary" @onclick="BuscarPorId">Buscar</button>
+        <button class="btn btn-outline-secondary" @onclick="LimpiarBusqueda">Limpiar</button>
+    </div>
+
+    @if (registros == null)
+    {
+        <p>Cargando registros...</p>
+    }
+    else if (!registros.Any())
+    {
+        <p>No hay servicios asignados.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Servicio</th>
+                    <th>Trabajador</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in registros)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@ObtenerNombreServicio(r.IdServicio)</td>
+                        <td>@ObtenerNombreTrabajador(r.IdTrabajador)</td>
+                        <td>
+                            <button class="btn btn-info btn-sm me-1" @onclick="() => VerDetalle(r.Id)">Ver</button>
+                            <button class="btn btn-warning btn-sm me-1" @onclick="() => Editar(r.Id)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => ConfirmarEliminar(r)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+else if (detalle != null && eliminar == null)
+{
+    <div class="card p-3 mb-3">
+        <p><strong>ID:</strong> @detalle.Id</p>
+        <p><strong>Servicio:</strong> @ObtenerNombreServicio(detalle.IdServicio)</p>
+        <p><strong>Trabajador:</strong> @ObtenerNombreTrabajador(detalle.IdTrabajador)</p>
+    </div>
+
+    <button class="btn btn-secondary" @onclick="Regresar">Regresar</button>
+}
+else if (eliminar != null)
+{
+    <div class="card p-3 border-danger mb-3">
+        <div class="alert alert-warning">⚠️ ¿Seguro que deseas eliminar este registro?</div>
+
+        <p><strong>ID:</strong> @eliminar.Id</p>
+        <p><strong>Servicio:</strong> @ObtenerNombreServicio(eliminar.IdServicio)</p>
+        <p><strong>Trabajador:</strong> @ObtenerNombreTrabajador(eliminar.IdTrabajador)</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn btn-danger me-2" @onclick="EliminarRegistro">Eliminar</button>
+            <button class="btn btn-secondary" @onclick="CancelarEliminar">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-info mt-3">@mensaje</div>
+}
+
+@code {
+
+    private List<ServicioTrabajadorDTO> registros;
+    private ServicioTrabajadorDTO detalle;
+    private ServicioTrabajadorDTO eliminar;
+    private int? busquedaId;
+    private string mensaje;
+
+    private List<Item> servicios = new();
+    private List<Item> trabajadores = new();
+
+    private bool esAdmin;
+    private string userId;
+    private string username;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        var handler = new JwtSecurityTokenHandler();
+        var jwt = handler.ReadJwtToken(token);
+
+        esAdmin = jwt.Claims.Any(c => c.Type == "role" && c.Value == "Administrador");
+        userId = jwt.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        username = jwt.Claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "Tú mismo";
+
+        await CargarServicios();
+        await CargarTrabajadores();
+        await CargarRegistros();
+    }
+
+    private async Task CargarServicios()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<Item>>("https://gestionsalyapi.onrender.com/servicios");
+        }
+        catch { /* manejar errores si quieres */ }
+    }
+
+    private async Task CargarTrabajadores()
+    {
+        try
+        {
+            if (esAdmin)
+            {
+                var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+                Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                trabajadores = await Http.GetFromJsonAsync<List<Item>>(
+                    "https://usersaly-api-node-js.onrender.com/usuarioslist/buscar?role_id=2"
+                );
+            }
+            else
+            {
+                // Trabajador solo se añade a sí mismo
+                int id = int.Parse(userId);
+                trabajadores = new List<Item> { new Item { Id = id, NombreMostrar = username } };
+            }
+        }
+        catch { /* manejar errores si quieres */ }
+    }
+
+    private async Task CargarRegistros()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var todosRegistros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
+                "https://gestionsalyapi.onrender.com/servicio-trabajador"
+            );
+
+            if (esAdmin)
+                registros = todosRegistros;
+            else
+            {
+                int idTrabajador = int.Parse(userId);
+                registros = todosRegistros.Where(r => r.IdTrabajador == idTrabajador).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar registros: {ex.Message}";
+        }
+    }
+
+    private void IrACrear() => Navigation.NavigateTo("/ServiciosTrabajador/asignarserviciotrabajador");
+    private void Editar(int id) => Navigation.NavigateTo($"/ServiciosTrabajador/editar/{id}");
+
+    private async Task VerDetalle(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener detalle: {ex.Message}";
+        }
+    }
+
+    private void Regresar()
+    {
+        detalle = null;
+        eliminar = null;
+    }
+
+    private void ConfirmarEliminar(ServicioTrabajadorDTO registro)
+    {
+        eliminar = registro;
+        detalle = null;
+    }
+
+    private async Task EliminarRegistro()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{eliminar.Id}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Registro eliminado.";
+                eliminar = null;
+                await CargarRegistros();
+            }
+            else
+                mensaje = $"❌ Error al eliminar: {response.ReasonPhrase}";
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar() => eliminar = null;
+
+    private async Task BuscarPorId()
+    {
+        if (busquedaId == null || busquedaId <= 0)
+        {
+            mensaje = "⚠️ Ingrese un ID válido.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var result = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{busquedaId}"
+            );
+
+            registros = result != null ? new List<ServicioTrabajadorDTO> { result } : new List<ServicioTrabajadorDTO>();
+            mensaje = result != null ? "✅ Registro encontrado." : "⚠️ No se encontró ningún registro.";
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar: {ex.Message}";
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        busquedaId = null;
+        mensaje = "";
+        await CargarRegistros();
+    }
+
+    private string ObtenerNombreServicio(int idServicio)
+        => servicios.FirstOrDefault(s => s.Id == idServicio)?.NombreMostrar ?? "Desconocido";
+
+    private string ObtenerNombreTrabajador(int idTrabajador)
+        => trabajadores.FirstOrDefault(t => t.Id == idTrabajador)?.NombreMostrar ?? "Tú mismo";
+
+    public class ServicioTrabajadorDTO
+    {
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("id_servicio")] public int IdServicio { get; set; }
+        [JsonPropertyName("id_trabajador")] public int IdTrabajador { get; set; }
+    }
+
+    public class Item
+    {
+        public int Id { get; set; }
+        public string NombreMostrar { get; set; }
+    }
+
+}

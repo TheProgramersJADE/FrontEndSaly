@@ -1,0 +1,155 @@
+﻿@page "/ServiciosTrabajador/editar/{AsignacionId:int}"
+@using System.Text.Json.Serialization
+@using System.IdentityModel.Tokens.Jwt
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<h3>Editar Asignación de Servicio</h3>
+
+    <div class="mb-3">
+        <label>Servicio</label>
+        <select class="form-select" @bind="nuevo.IdServicio">
+            <option value="">-- Seleccione --</option>
+            @foreach (var s in servicios)
+            {
+                <option value="@s.Id">@s.NombreMostrar</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Trabajador</label>
+        <input type="text" class="form-control" value="@username" disabled />
+    </div>
+
+    <button class="btn btn-success" @onclick="Guardar">Guardar</button>
+    <button class="btn btn-secondary ms-2" @onclick="Cancelar">Cancelar</button>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alert alert-info mt-3">@mensaje</div>
+    }
+
+
+@code {
+
+    [Parameter] public int AsignacionId { get; set; }
+
+    private Registro nuevo = new();
+    private List<Item> servicios = new();
+    private string mensaje;
+    private string userId;
+    private string username = "Tú mismo";
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+
+            // ✅ Leer token para obtener ID y username
+            var handler = new JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+
+            userId = jwt.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            username = jwt.Claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "Tú mismo";
+
+            if (!string.IsNullOrEmpty(userId))
+                nuevo.IdTrabajador = int.Parse(userId);
+
+            // ✅ Cargar servicios
+            await CargarServicios();
+
+            // 🔹 Aquí se puede cargar la asignación existente
+            // Solo si quieres mostrar el servicio seleccionado actualmente
+            await CargarAsignacionExistente();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CargarServicios()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        servicios = await Http.GetFromJsonAsync<List<Item>>("https://gestionsalyapi.onrender.com/servicios");
+    }
+
+    private async Task CargarAsignacionExistente()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // 🔹 Solo obtén la asignación si el endpoint permite que el trabajador vea su propia asignación
+            var asignacion = await Http.GetFromJsonAsync<Registro>(
+                $"https://tu-api-url.com/servicios-trabajador/{AsignacionId}"
+            );
+
+            if (asignacion != null)
+            {
+                nuevo.IdServicio = asignacion.IdServicio;
+                // IdTrabajador ya está asignado desde el token
+            }
+        }
+        catch
+        {
+            // Ignorar errores para no bloquear la vista
+        }
+    }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PutAsJsonAsync(
+                $"https://tu-api-url.com/servicios-trabajador/{AsignacionId}",
+                nuevo
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Asignación actualizada correctamente.";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/ServiciosTrabajador/servitrabajador");
+            }
+            else
+            {
+                mensaje = "❌ Error al actualizar la asignación.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al guardar: {ex.Message}";
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/ServiciosTrabajador/servitrabajador");
+
+    public class Registro
+    {
+        [JsonPropertyName("id_servicio")] public int IdServicio { get; set; }
+        [JsonPropertyName("id_trabajador")] public int IdTrabajador { get; set; }
+    }
+
+    public class Item
+    {
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("nombre_servicio")] public string NombreServicio { get; set; }
+        public string NombreMostrar => NombreServicio;
+    }
+
+}
