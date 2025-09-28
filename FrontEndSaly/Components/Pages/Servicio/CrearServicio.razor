@@ -6,6 +6,194 @@
 
 <PageTitle>Crear Servicio</PageTitle>
 
+<h3 class="form-title">➕ Crear nuevo servicio</h3>
+
+<EditForm Model="@nuevoServicio" OnValidSubmit="@CrearNuevoServicio" class="login-form">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Nombre del Servicio:</label>
+        <InputText class="form-control styled-input" @bind-Value="nuevoServicio.Nombre_Servicio" />
+    </div>
+
+    <div class="form-group">
+        <label>Descripción:</label>
+        <InputTextArea class="form-control styled-input" @bind-Value="nuevoServicio.Descripcion" />
+    </div>
+
+    <div class="form-group">
+        <label>Duración (en horas o minutos):</label>
+        <InputNumber class="form-control styled-input" @bind-Value="nuevoServicio.Duracion" />
+    </div>
+
+    <div class="form-group">
+        <label>Precio:</label>
+        <InputText class="form-control styled-input" @bind-Value="nuevoServicio.Precio" />
+    </div>
+
+    <div class="text-center">
+        <button type="button" class="btn styled-btn secondary" @onclick="Cancelar">Cancelar</button>
+        <button type="submit" class="btn styled-btn primary">✅ Guardar</button>
+    </div>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    /* Título */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    /* Contenedor */
+    .login-form {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Inputs */
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    /* Botones */
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.7rem 1.5rem;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+            color: #111;
+        }
+
+    /* Mensaje */
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    /* Labels */
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+        display: block;
+        color: #111;
+        font-size: 1.05rem;
+    }
+</style>
+
+@code {
+    private ServicioDTO nuevoServicio = new ServicioDTO();
+    private string mensaje;
+
+    private async Task CrearNuevoServicio()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/servicios", nuevoServicio);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Servicio creado correctamente.";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/servicio/servicios");
+            }
+            else
+            {
+                mensaje = $"❌ Error al crear servicio: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al conectar con el servidor: {ex.Message}";
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/servicio/servicios");
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+}
+
+
+
+
+
+
+@* @page "/servicios/crear"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Crear Servicio</PageTitle>
+
 <h3> Crear nuevo servicio</h3>
 
 @if (!string.IsNullOrEmpty(mensaje))
@@ -92,3 +280,4 @@
         public string Precio { get; set; }
     }
 }
+ *@

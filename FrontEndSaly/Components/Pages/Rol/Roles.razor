@@ -8,20 +8,20 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<h3 class="form-title">Lista de Roles</h3>
+<h3 class="form-title">Gestión de Roles</h3>
 
 @if (roles == null)
 {
-    <p>Cargando roles...</p>
+    <p class="loading-text">⏳ Cargando roles...</p>
 }
 else if (!roles.Any())
 {
-    <p>No hay roles registrados.</p>
+    <p class="no-data">⚠️ No hay roles registrados.</p>
 }
 else
 {
     <div class="roles-table-container">
-        <table class="table table-striped styled-table mt-3">
+        <table class="table styled-table mt-3">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -47,52 +47,70 @@ else
 }
 
 <style>
-    /* Título */
+    /* 🔹 Título */
     .form-title {
         font-family: 'Lilita One', cursive;
         font-size: 2rem;
         font-weight: bold;
-        color: #111;
+        color: #222;
         margin-bottom: 2rem;
         text-align: center;
     }
 
-    /* Contenedor de tabla */
-    .roles-table-container {
-        width: 100%; /* 🔥 ahora ocupa todo el ancho */
-        margin: 0 auto;
-        padding: 2rem;
-        background-color: #f7e6fa; /* rosa muy suave */
-        border-radius: 16px;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        overflow-x: auto; /* 🔥 permite scroll horizontal si hay muchas columnas */
+    /* 🔹 Mensajes */
+    .loading-text, .no-data {
+        text-align: center;
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-top: 1rem;
     }
 
-    /* Tabla estilizada */
+    .loading-text {
+        color: #6f42c1;
+    }
+
+    .no-data {
+        color: #dc3545;
+    }
+
+    /* 🔹 Contenedor */
+    .roles-table-container {
+        width: 100%;
+        margin: 0 auto;
+        padding: 1.5rem;
+        background-color: #fdf2ff; /* fondo suave */
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        overflow-x: auto;
+    }
+
+    /* 🔹 Tabla */
     .styled-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        font-weight: bold;
-        color: #111;
+        font-weight: 500;
+        color: #222;
     }
 
         .styled-table th, .styled-table td {
-            padding: 0.8rem 1rem;
+            padding: 0.9rem 1.2rem;
             text-align: left;
-            border-bottom: 2px solid #a569bd; /* línea morada */
+            border-bottom: 2px solid #b57edc;
         }
 
         .styled-table thead {
-            background-color: #d9a3e0; /* morado claro */
+            background-color: #d8b4f8; /* morado claro */
             color: #111;
+            font-weight: bold;
         }
 
         .styled-table tbody tr:hover {
-            background-color: #f0c9f0;
+            background-color: #f5e1ff;
+            transition: 0.2s;
         }
 
-    /* Mensaje */
+    /* 🔹 Mensaje final */
     .mensaje {
         font-weight: bold;
         margin-top: 1rem;

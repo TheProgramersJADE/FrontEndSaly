@@ -4,6 +4,191 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<h3 class="form-title">Editar Usuario</h3>
+
+@if (usuario == null)
+{
+    <p class="mensaje">Cargando usuario...</p>
+}
+else
+{
+    <EditForm Model="usuario" OnValidSubmit="ActualizarUsuarioAsync" class="login-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Username:</label>
+            <InputText @bind-Value="usuario.Username" class="form-control styled-input" />
+        </div>
+
+        <div class="mb-3">
+            <label>Email:</label>
+            <InputText @bind-Value="usuario.Email" class="form-control styled-input" />
+        </div>
+
+        <div class="mb-3">
+            <label>Password (opcional):</label>
+            <InputText @bind-Value="usuario.Password" class="form-control styled-input" type="password" />
+        </div>
+
+        <div class="mb-3">
+            <label>Rol:</label>
+            <InputSelect @bind-Value="usuario.Role_Id" class="form-control styled-input" Disabled="true">
+                <option value="1">Cliente</option>
+                <option value="2">Trabajador</option>
+                <option value="3">Administrador</option>
+            </InputSelect>
+        </div>
+
+        <div class="d-flex mt-3">
+            <button type="button" class="btn styled-btn secondary me-2" @onclick="Cancelar">Cancelar</button>
+            <button type="submit" class="btn styled-btn primary">Actualizar</button>
+        </div>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <p class="mensaje">@mensaje</p>
+    }
+}
+
+<style>
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 600px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+        }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+</style>
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private UsuarioRequest usuario;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/weather");
+            return;
+        }
+
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+    }
+
+    private async Task ActualizarUsuarioAsync()
+    {
+        if (usuario.Role_Id == 0) usuario.Role_Id = 1;
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}", usuario);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Usuario actualizado correctamente.";
+                Navigation.NavigateTo("/counter");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error al actualizar usuario: {errorContent}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/counter");
+
+    public class UsuarioRequest
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public int Role_Id { get; set; }
+    }
+}
+
+
+
+
+
+@* @page "/usuarios/editar/{id:int}"
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <h3>Editar Usuario</h3>
 
 @if (usuario == null)
@@ -111,3 +296,4 @@ else
         public int Role_Id { get; set; }
     }
 }
+ *@

@@ -4,6 +4,339 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<PageTitle>✏️ Editar Cita</PageTitle>
+
+<h3 class="form-title">Editar Cita</h3>
+
+@if (cita == null)
+{
+    <p class="mensaje">Cargando datos de la cita...</p>
+}
+else
+{
+    <EditForm Model="@cita" OnValidSubmit="@GuardarCambios" class="login-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Nombre del Cliente</label>
+            <InputText class="form-control styled-input" @bind-Value="cita.NombreCliente" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Teléfono del Cliente</label>
+            <InputText class="form-control styled-input" @bind-Value="cita.TelefonoCliente" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fecha y Hora</label>
+            <InputText class="form-control styled-input" type="datetime-local"
+                       value="@cita.FechaHora.ToString("yyyy-MM-ddTHH:mm")"
+                       @onchange="OnFechaHoraChanged" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Trabajador</label>
+            <InputSelect class="form-control styled-input" @bind-Value="cita.NombreTrabajador">
+                <option value="">-- Selecciona un trabajador --</option>
+                @if (trabajadores != null)
+                {
+                    @foreach (var t in trabajadores)
+                    {
+                        <option value="@t.Username">@t.Username</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Servicio</label>
+            <InputSelect class="form-control styled-input" @bind-Value="cita.IdServicio">
+                <option value="">-- Selecciona un servicio --</option>
+                @if (servicios != null)
+                {
+                    @foreach (var s in servicios)
+                    {
+                        <option value="@s.Id">@s.Nombre_Servicio</option>
+                    }
+                }
+            </InputSelect>
+        </div>
+
+        <div class="d-flex mt-3">
+            <button type="submit" class="btn styled-btn primary">💾 Guardar Cambios</button>
+            <button type="button" class="btn styled-btn secondary ms-2" @onclick="Volver">↩️ Cancelar</button>
+        </div>
+    </EditForm>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 600px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+        width: 100%;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+        }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    .form-group label, .form-label {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+        display: block;
+        color: #111;
+        font-size: 1.05rem;
+    }
+</style>
+
+@code {
+    [Parameter] public int id { get; set; }
+
+    private CitaDTO cita;
+    private string mensaje;
+    private List<ServicioDTO> servicios = new();
+    private List<UsuarioDTO> trabajadores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarServiciosAsync();
+        await CargarTrabajadoresAsync();
+        await CargarCita();
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+        }
+    }
+
+    private async Task CargarTrabajadoresAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var allUsuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>("https://usersaly-api-node-js.onrender.com/usuarioslist");
+            trabajadores = allUsuarios.Where(u => u.Role_Id == 2).ToList();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar trabajadores: {ex.Message}";
+        }
+    }
+
+    private async Task CargarCita()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            cita = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar cita: {ex.Message}";
+        }
+    }
+
+    private void OnFechaHoraChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var fechaHora))
+        {
+            cita.FechaHora = fechaHora;
+        }
+    }
+
+    private async Task GuardarCambios()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PutAsJsonAsync($"https://gestionsalyapi.onrender.com/citas/{id}", cita);
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Cita actualizada correctamente.";
+                await Task.Delay(1500);
+                Navigation.NavigateTo("/cita/citas");
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error al actualizar cita: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/cita/citas");
+    }
+
+    public class CitaDTO
+    {
+        [JsonPropertyName("id_cita")]
+        public int IdCita { get; set; }
+
+        [JsonPropertyName("nombre_cliente")]
+        public string NombreCliente { get; set; }
+
+        [JsonPropertyName("telefono_cliente")]
+        public string TelefonoCliente { get; set; }
+
+        [JsonPropertyName("fecha_hora")]
+        public DateTime FechaHora { get; set; }
+
+        [JsonPropertyName("nombre_trabajador")]
+        public string NombreTrabajador { get; set; }
+
+        [JsonPropertyName("id_servicio")]
+        public int IdServicio { get; set; }
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+
+    public class UsuarioDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("username")]
+        public string Username { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+
+        [JsonPropertyName("role_id")]
+        public int Role_Id { get; set; }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+@* CODIGO PRINCIPAL *@
+@* @page "/cita/editar/{id:int}"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <PageTitle>Editar Cita</PageTitle>
 
 <h3 class="mb-4">✏️ Editar Cita</h3>
@@ -252,3 +585,4 @@ else
         public int Role_Id { get; set; }
     }
 }
+ *@
