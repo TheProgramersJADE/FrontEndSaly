@@ -85,7 +85,7 @@
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var response = await Http.PostAsJsonAsync("https://tu-api-url.com/servicios-trabajador", nuevo);
+            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/servicio-trabajador", nuevo);
 
             if (response.IsSuccessStatusCode)
             {

@@ -93,7 +93,7 @@
 
             // 🔹 Solo obtén la asignación si el endpoint permite que el trabajador vea su propia asignación
             var asignacion = await Http.GetFromJsonAsync<Registro>(
-                $"https://tu-api-url.com/servicios-trabajador/{AsignacionId}"
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{AsignacionId}"
             );
 
             if (asignacion != null)
@@ -116,7 +116,7 @@
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.PutAsJsonAsync(
-                $"https://tu-api-url.com/servicios-trabajador/{AsignacionId}",
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{AsignacionId}",
                 nuevo
             );
 
