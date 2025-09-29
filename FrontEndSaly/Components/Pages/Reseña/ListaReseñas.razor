@@ -1,0 +1,351 @@
+﻿@page "/Reseña/resennas"
+@using System.Text.Json.Serialization
+
+<PageTitle>Gestión de Reseñas</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3> Gestión de Reseñas</h3>
+
+@if (resennaDetalle == null && resennaEliminar == null && resennaEditar == null)
+{
+    @if (resennas == null)
+    {
+        <p>Cargando reseñas...</p>
+    }
+    else if (!resennas.Any())
+    {
+        <p>No hay reseñas registradas.</p>
+    }
+    else
+    {
+
+        <!-- 🔍 FILTRO POR ID -->
+        <div class="mb-3">
+            <label>Buscar por ID:</label>
+            <input type="number" class="form-control" @bind="filtroId" placeholder="Ingrese ID..." />
+            <button class="btn btn-primary" @onclick="AplicarFiltro">Buscar</button>
+            <button class="btn btn-secondary" @onclick="LimpiarFiltro">Limpiar</button>
+        </div>
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Trabajador</th>
+                    <th>Calificación</th>
+                    <th>Comentario</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in resennasFiltradas)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@r.Nombre_Cliente</td>
+                        <td>@r.Nombre_Trabajador</td>
+                        <td>@r.Calificacion</td>
+                        <td>@r.Comentario</td>
+                        <td>@r.Fecha?.ToString("yyyy-MM-dd")</td>
+                        <td>
+                            <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerDetalle(r.Id))">Ver</button>
+                            <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarResenna(r.Id))">Editar</button>
+                            <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(r))">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+else if (resennaDetalle != null && resennaEliminar == null && resennaEditar == null)
+{
+    <!-- 📄 DETALLE DE LA RESEÑA -->
+    <div class="card p-3 mb-3">
+        <h5>📋 Detalle de la Reseña</h5>
+        <p><strong>ID:</strong> @resennaDetalle.Id</p>
+        <p><strong>Cliente:</strong> @resennaDetalle.Nombre_Cliente</p>
+        <p><strong>Trabajador:</strong> @resennaDetalle.Nombre_Trabajador</p>
+        <p><strong>Calificación:</strong> @resennaDetalle.Calificacion</p>
+        <p><strong>Comentario:</strong> @resennaDetalle.Comentario</p>
+        <p><strong>Fecha:</strong> @resennaDetalle.Fecha?.ToString("yyyy-MM-dd")</p>
+    </div>
+    <button class="btn btn-secondary" @onclick="Regresar">Regresar</button>
+}
+else if (resennaEliminar != null)
+{
+    <!-- ⚠️ CONFIRMACIÓN DE ELIMINAR -->
+    <div class="card p-3 mb-3 border-danger">
+        <div class="alert alert-warning mb-3" role="alert">
+            ⚠️ ¿Estás seguro que deseas eliminar esta reseña?
+        </div>
+        <p><strong>ID:</strong> @resennaEliminar.Id</p>
+        <p><strong>Cliente:</strong> @resennaEliminar.Nombre_Cliente</p>
+        <p><strong>Comentario:</strong> @resennaEliminar.Comentario</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn btn-danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
+            <button class="btn btn-secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
+        </div>
+    </div>
+}
+else if (resennaEditar != null)
+{
+    <!-- 📝 FORMULARIO DE EDICIÓN -->
+    <div class="card p-3 mb-3 border-warning">
+        <h5>✏️ Editar Reseña</h5>
+
+        <div class="mb-3">
+            <label class="form-label">Cliente</label>
+            <input class="form-control" @bind="resennaEditar.Nombre_Cliente" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Trabajador</label>
+            <input class="form-control" @bind="resennaEditar.Nombre_Trabajador" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Calificación</label>
+            <input type="number" class="form-control" @bind="resennaEditar.Calificacion" min="1" max="5" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Comentario</label>
+            <textarea class="form-control" @bind="resennaEditar.Comentario"></textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-control" @bind="resennaEditar.Fecha" />
+        </div>
+
+
+        <div class="d-flex">
+            <button class="btn btn-success me-2" @onclick="GuardarEdicion">Guardar</button>
+            <button class="btn btn-secondary" @onclick="CancelarEditar">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mt-3">@mensaje</p>
+}
+
+@code {
+    private List<ResennaDTO> resennas;
+    private ResennaDTO resennaDetalle = null;
+    private ResennaDTO resennaEliminar = null;
+    private ResennaDTO resennaEditar = null;
+    private string mensaje;
+    private int? filtroId = null;
+    private List<ResennaDTO> resennasFiltradas;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarResennasAsync();
+    }
+
+    private async Task CargarResennasAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            resennas = await Http.GetFromJsonAsync<List<ResennaDTO>>(
+                "https://gestionsalyapi.onrender.com/resennas"
+            );
+
+            // Inicializamos la lista filtrada
+            resennasFiltradas = resennas;
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar reseñas: {ex.Message}";
+        }
+    }
+
+    private async Task VerDetalle(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            resennaDetalle = await Http.GetFromJsonAsync<ResennaDTO>(
+                $"https://gestionsalyapi.onrender.com/resennas/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al obtener detalle: {ex.Message}";
+        }
+    }
+
+    private async Task EditarResenna(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            resennaEditar = await Http.GetFromJsonAsync<ResennaDTO>(
+                $"https://gestionsalyapi.onrender.com/resennas/{id}"
+            );
+
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar reseña para editar: {ex.Message}";
+        }
+    }
+
+    private async Task GuardarEdicion()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PutAsJsonAsync(
+                $"https://gestionsalyapi.onrender.com/resennas/{resennaEditar.Id}",
+                resennaEditar
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Reseña actualizada correctamente.";
+                resennaEditar = null;
+                await CargarResennasAsync();
+            }
+            else
+            {
+                mensaje = $"❌ Error al actualizar reseña: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void Regresar()
+    {
+        resennaDetalle = null;
+        resennaEliminar = null;
+        resennaEditar = null;
+    }
+
+    private void MostrarConfirmacionEliminar(ResennaDTO resenna)
+    {
+        resennaEliminar = resenna;
+    }
+
+    private async Task ConfirmarEliminar()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync(
+                $"https://gestionsalyapi.onrender.com/resennas/{resennaEliminar.Id}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Reseña eliminada correctamente.";
+                resennaEliminar = null;
+                await CargarResennasAsync();
+            }
+            else
+            {
+                mensaje = $"❌ Error al eliminar reseña: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error de conexión: {ex.Message}";
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        resennaEliminar = null;
+        resennaDetalle = null;
+        resennaEditar = null;
+    }
+
+    private void CancelarEditar()
+    {
+        resennaEditar = null;
+    }
+
+    private void AplicarFiltro()
+    {
+        if (filtroId.HasValue)
+        {
+            resennasFiltradas = resennas.Where(r => r.Id == filtroId.Value).ToList();
+
+            if (resennasFiltradas.Any())
+                mensaje = "✅ Reseña encontrada";
+            else
+                mensaje = "⚠️ No se encontró ninguna reseña con ese ID";
+        }
+        else
+        {
+            resennasFiltradas = resennas;
+            mensaje = null; // Limpiamos el mensaje si no hay filtro
+        }
+    }
+
+    // Limpiar filtro
+    private void LimpiarFiltro()
+    {
+        filtroId = null;
+        resennasFiltradas = resennas;
+        mensaje = null;
+    }
+
+
+    public class ResennaDTO
+    {
+        [JsonPropertyName("id_resena")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_cliente")]
+        public string Nombre_Cliente { get; set; }
+
+        [JsonPropertyName("nombre_trabajador")]
+        public string Nombre_Trabajador { get; set; }
+
+        [JsonPropertyName("calificacion")]
+        public int Calificacion { get; set; }
+
+        [JsonPropertyName("comentario")]
+        public string Comentario { get; set; }
+
+        [JsonPropertyName("fecha")]
+        public DateTime? Fecha { get; set; }
+    }
+}
