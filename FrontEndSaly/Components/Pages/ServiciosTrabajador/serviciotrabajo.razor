@@ -6,15 +6,13 @@
 
 <h3>Gestión de Servicios-Trabajador</h3>
 
-@if (registroDetalle == null && registroEliminar == null && !crearNuevo && !editarExistente)
+@if (registroDetalle == null && !crearNuevo)
 {
     <div class="mb-3 d-flex align-items-center flex-wrap">
         <input type="number" class="form-control me-2 mb-2" placeholder="Buscar por ID..." @bind="filtroId" />
-
         <button class="btn btn-primary mb-2" @onclick="BuscarPorIdAsync">Buscar</button>
         <button class="btn btn-secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
     </div>
-
 
     <div>
         <button @onclick="MostrarFormularioCrear">Crear Nuevo</button>
@@ -33,8 +31,8 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>ID Servicio</th>
-                        <th>ID Trabajador</th>
+                        <th>Servicio</th>
+                        <th>Trabajador</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -44,11 +42,9 @@
                         <tr>
                             <td>@r.Id</td>
                             <td>@listaServicios.FirstOrDefault(s => s.Id == r.Id_Servicio)?.Nombre_Servicio</td>
-                            <td>@r.Id_Trabajador</td>
+                            <td>@ObtenerNombreTrabajador(r.Id_Trabajador)</td>
                             <td>
                                 <button @onclick="() => VerDetalle(r.Id)">Ver</button>
-                                <button @onclick="() => MostrarFormularioEditar(r.Id)">Editar</button>
-                                <button @onclick="() => ConfirmarEliminar(r)">Eliminar</button>
                             </td>
                         </tr>
                     }
@@ -57,27 +53,15 @@
         }
     </div>
 }
-else if (registroDetalle != null && registroEliminar == null)
+else if (registroDetalle != null)
 {
     <div>
         <h4>Detalle del Registro</h4>
         <p><strong>ID:</strong> @registroDetalle.Id</p>
         <p><strong>Servicio:</strong> @listaServicios.FirstOrDefault(s => s.Id == registroDetalle.Id_Servicio)?.Nombre_Servicio</p>
-        <p><strong>ID Trabajador:</strong> @registroDetalle.Id_Trabajador</p>
+        <p><strong>Trabajador:</strong> @ObtenerNombreTrabajador(registroDetalle.Id_Trabajador)</p>
 
         <button @onclick="Regresar">Volver</button>
-    </div>
-}
-else if (registroEliminar != null)
-{
-    <div>
-        <p>⚠️ ¿Estás seguro de que deseas eliminar este registro?</p>
-        <p><strong>ID:</strong> @registroEliminar.Id</p>
-        <p><strong>Servicio:</strong> @listaServicios.FirstOrDefault(s => s.Id == registroEliminar.Id_Servicio)?.Nombre_Servicio</p>
-        <p><strong>ID Trabajador:</strong> @registroEliminar.Id_Trabajador</p>
-
-        <button @onclick="EliminarRegistro">Eliminar</button>
-        <button @onclick="CancelarEliminar">Cancelar</button>
     </div>
 }
 else if (crearNuevo)
@@ -92,30 +76,18 @@ else if (crearNuevo)
                 <option value="@s.Id">@s.Nombre_Servicio</option>
             }
         </select>
-        <p>(ID Trabajador se toma del token automáticamente)</p>
 
-        <button @onclick="CrearRegistro">Guardar</button>
+        @if (!esAdmin)
+        {
+            <p>Trabajador: <strong>@username</strong></p>
+            <button @onclick="CrearRegistro">Guardar</button>
+        }
+        else
+        {
+            <p>❌ Los administradores no pueden crear asignaciones</p>
+            <button class="btn btn-primary" disabled>Guardar</button>
+        }
         <button @onclick="CancelarCrear">Cancelar</button>
-    </div>
-}
-else if (editarExistente)
-{
-    <div>
-        <h4>Editar Registro</h4>
-        <p>Servicio:</p>
-        <select class="form-select" @bind="registroEditar.Id_Servicio">
-            <option value="">-- Selecciona un servicio --</option>
-            @foreach (var s in listaServicios)
-            {
-                <option value="@s.Id">@s.Nombre_Servicio</option>
-            }
-        </select>
-        <p>ID Trabajador:</p>
-        <input type="number" @bind="registroEditar.Id_Trabajador" />
-
-
-        <button @onclick="GuardarEdicion">Guardar Cambios</button>
-        <button @onclick="CancelarEditar">Cancelar</button>
     </div>
 }
 
@@ -127,16 +99,31 @@ else if (editarExistente)
 @code {
     private List<ServicioTrabajadorDTO> registros;
     private ServicioTrabajadorDTO registroDetalle;
-    private ServicioTrabajadorDTO registroEliminar;
     private ServicioTrabajadorDTO nuevoRegistro = new();
-    private ServicioTrabajadorDTO registroEditar = new();
 
     private bool crearNuevo = false;
-    private bool editarExistente = false;
     private string mensaje;
     private int? filtroId = null;
 
-    private List<ServicioDTO> listaServicios = new(); // Lista para el combobox
+    private List<ServicioDTO> listaServicios = new();
+    private List<TrabajadorDTO> trabajadores = new();
+    private string username;
+    private int userId;
+    private bool esAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await ObtenerUsuarioLogueado();
+        await CargarListaServicios();
+        await CargarRegistros();
+    }
 
     private async Task CargarListaServicios()
     {
@@ -156,11 +143,32 @@ else if (editarExistente)
         }
     }
 
-
-    protected override async Task OnInitializedAsync()
+    private string ObtenerNombreTrabajador(int idTrabajador)
     {
-        await CargarRegistros();
-        await CargarListaServicios(); // Cargamos lista de servicios
+        if (esAdmin)
+        {
+            return trabajadores.FirstOrDefault(t => t.Id == idTrabajador)?.Nombre ?? "Desconocido";
+        }
+        else
+        {
+            return username;
+        }
+    }
+
+    private async Task ObtenerUsuarioLogueado()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+
+            username = jwt.Claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "Desconocido";
+            userId = int.Parse(jwt.Claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "0");
+
+            var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == "role")?.Value ?? "";
+            esAdmin = roleClaim.Contains("Administrador", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private async Task CargarRegistros()
@@ -174,6 +182,11 @@ else if (editarExistente)
             registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
                 "https://gestionsalyapi.onrender.com/servicio-trabajador"
             );
+
+            if (!esAdmin)
+            {
+                registros = registros.Where(r => r.Id_Trabajador == userId).ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -201,8 +214,8 @@ else if (editarExistente)
 
             if (registro != null)
             {
-                registros = new List<ServicioTrabajadorDTO> { registro }; // Solo un registro
-                mensaje = null; // Limpiamos mensaje
+                registros = new List<ServicioTrabajadorDTO> { registro };
+                mensaje = null;
             }
             else
             {
@@ -210,21 +223,17 @@ else if (editarExistente)
                 mensaje = "No se encontró ningún registro con ese ID.";
             }
         }
-        catch (HttpRequestException ex)
-        {
-            mensaje = $"🚨 Error al buscar registro: {ex.Message}";
-        }
         catch (Exception ex)
         {
-            mensaje = $"🚨 Error inesperado: {ex.Message}";
+            mensaje = $"🚨 Error al buscar registro: {ex.Message}";
         }
     }
 
     private async Task LimpiarBusqueda()
     {
-        filtroId = null;            // Limpiamos el filtro
-        mensaje = null;             // Limpiamos cualquier mensaje
-        await CargarRegistros();    // Cargamos todos los registros nuevamente
+        filtroId = null;
+        mensaje = null;
+        await CargarRegistros();
     }
 
     private async Task VerDetalle(int id)
@@ -248,9 +257,7 @@ else if (editarExistente)
     private void Regresar()
     {
         registroDetalle = null;
-        registroEliminar = null;
         crearNuevo = false;
-        editarExistente = false;
     }
 
     private void MostrarFormularioCrear()
@@ -291,96 +298,6 @@ else if (editarExistente)
 
     private void CancelarCrear() => crearNuevo = false;
 
-    private void MostrarFormularioEditar(int id)
-    {
-        var registro = registros.FirstOrDefault(r => r.Id == id);
-        if (registro != null)
-        {
-            registroEditar = new ServicioTrabajadorDTO
-            {
-                Id = registro.Id,
-                Id_Servicio = registro.Id_Servicio,
-                Id_Trabajador = registro.Id_Trabajador
-            };
-            editarExistente = true;
-        }
-    }
-
-    private async Task GuardarEdicion()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var response = await Http.PutAsJsonAsync(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{registroEditar.Id}",
-                new
-                {
-                    id_servicio = registroEditar.Id_Servicio,
-                    id_trabajador = registroEditar.Id_Trabajador
-                }
-            );
-
-            if (response.IsSuccessStatusCode)
-            {
-                mensaje = "✅ Registro actualizado correctamente.";
-                editarExistente = false;
-                await CargarRegistros();
-            }
-            else
-            {
-                mensaje = "❌ Error al actualizar: " + response.ReasonPhrase;
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = "🚨 Error de conexión: " + ex.Message;
-        }
-    }
-
-    private void CancelarEditar() => editarExistente = false;
-
-    private void ConfirmarEliminar(ServicioTrabajadorDTO registro)
-    {
-        registroEliminar = registro;
-    }
-
-    private async Task EliminarRegistro()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var response = await Http.DeleteAsync(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{registroEliminar.Id}"
-            );
-
-            if (response.IsSuccessStatusCode)
-            {
-                mensaje = "✅ Registro eliminado.";
-                registroEliminar = null;
-                await CargarRegistros();
-            }
-            else
-            {
-                mensaje = "❌ Error al eliminar: " + response.ReasonPhrase;
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = "🚨 Error de conexión: " + ex.Message;
-        }
-    }
-
-    private void CancelarEliminar()
-    {
-        registroEliminar = null;
-    }
-
     public class ServicioTrabajadorDTO
     {
         [JsonPropertyName("id")]
@@ -409,5 +326,11 @@ else if (editarExistente)
 
         [JsonPropertyName("precio")]
         public string Precio { get; set; }
+    }
+
+    public class TrabajadorDTO
+    {
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("nombre")] public string Nombre { get; set; }
     }
 }
