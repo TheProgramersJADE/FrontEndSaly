@@ -1,0 +1,150 @@
+﻿@page "/sobrenosotros"
+
+<PageTitle>Sobre Nosotros</PageTitle>
+
+<div class="container mt-5">
+    <!-- Título principal -->
+    <div class="text-center mb-4">
+        <h1>Bienvenidos a BEATY SALY</h1>
+        <p class="lead">Tu espacio de belleza y bienestar</p>
+    </div>
+
+    <!-- Carrusel de imágenes -->
+    <div id="carruselSalon" class="carousel slide mb-5" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="images/coso2.jpg" class="d-block w-100" alt="Recepción del salón" />
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Bienvenida cálida</h5>
+                    <p>Tu experiencia comienza desde la entrada.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="images/coso3.jpg" class="d-block w-100" alt="Zona de tratamientos" />
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Zona de tratamientos</h5>
+                    <p>Relájate mientras cuidamos de ti.</p>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <img src="images/coso1.jpg" class="d-block w-100" alt="Equipo profesional" />
+                <div class="carousel-caption d-none d-md-block">
+                    <h5>Equipo profesional</h5>
+                    <p>Expertos en belleza y bienestar.</p>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carruselSalon" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+            <span class="visually-hidden">Anterior</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carruselSalon" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+            <span class="visually-hidden">Siguiente</span>
+        </button>
+    </div>
+
+    <!-- Sección: Sobre nosotros -->
+    <section class="mb-5">
+        <h2>¿Quiénes somos?</h2>
+        <p>
+            Somos un equipo apasionado por la estética y el cuidado personal. En nuestro salón, combinamos experiencia,
+            productos de calidad y atención personalizada para que cada visita sea una experiencia única.
+        </p>
+    </section>
+
+    <!-- Sección: Cómo llegar -->
+    <section class="mb-5">
+        <h2>¿Cómo llegar?</h2>
+        <p>
+            Nos encontramos en Escuela Superior Franciscana Especializada AGAPE, Sonsonate. Puedes llegar fácilmente en transporte público o en vehículo propio. ¡Tenemos estacionamiento disponible!
+        </p>
+        <div class="ratio ratio-16x9">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3871.5552474944087!2d-89.70894778468327!3d13.737316704877896!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8f62b79737c58553%3A0xe872da142efcd936!2sEscuela%20Superior%20Franciscana%20Especializada%2FAGAPE!5e0!3m2!1ses-419!2ssv!4v1695932541234!5m2!1ses-419!2ssv"
+                    allowfullscreen
+                    loading="lazy"
+                    style="border:0;">
+            </iframe>
+        </div>
+    </section>
+
+    <!-- Sección: Contacto -->
+    <section class="mb-5">
+        <h2>Contáctanos</h2>
+        <ul class="list-unstyled">
+            <li><strong>Teléfono:</strong> 4538-9023</li>
+            <li><strong>WhatsApp:</strong> 4538-9023</li>
+            <li><strong>Email:</strong> beatysaly@gmial.com</li>
+            <li><strong>Horario:</strong> Lunes a sábado, 9:00 a.m. - 6:00 p.m.</li>
+        </ul>
+    </section>
+
+    <!-- Sección: Redes sociales -->
+    <section class="mb-5">
+        <h2>Síguenos</h2>
+        <p>Estamos en redes sociales para que no te pierdas ninguna promoción o novedad:</p>
+        <a href="https://www.facebook.com" class="btn btn-primary me-2" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a href="https://www.instagram.com" class="btn btn-danger" target="_blank" rel="noopener noreferrer">Instagram</a>
+    </section>
+
+</div>
+
+<style>
+    body {
+        background: linear-gradient(to right, #fdfbfb, #ebedee);
+        font-family: 'Segoe UI', sans-serif;
+        color: #444;
+    }
+
+    /* Carrusel más compacto */
+    #carruselSalon {
+        max-height: 500px; /* Ajusta según quieras que se vea */
+        overflow: hidden;
+    }
+
+        #carruselSalon .carousel-item img {
+            height: 500px; /* Igual que el max-height */
+            object-fit: cover; /* Ajusta la imagen sin deformarla */
+        }
+
+    h1, h2 {
+        font-family: 'Playfair Display', serif;
+        color: #b85c8e;
+    }
+
+    .lead {
+        font-size: 1.2rem;
+        color: #6c757d;
+    }
+
+    .carousel-caption {
+        background-color: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+        padding: 1rem;
+        color: #333;
+    }
+
+    section {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .btn-primary {
+        background-color: #b85c8e;
+        border: none;
+    }
+
+    .btn-danger {
+        background-color: #e57373;
+        border: none;
+    }
+
+    .list-unstyled li {
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -179,7 +179,7 @@
                 var resultado = await response.Content.ReadFromJsonAsync<LoginResponse>();
                 await JS.InvokeVoidAsync("sessionStorage.setItem", "authToken", resultado.Token);
                 mensaje = "✅ Login exitoso!";
-                Navigation.NavigateTo("/counter");
+                Navigation.NavigateTo("/sobrenosotros");
             }
             else
             {
