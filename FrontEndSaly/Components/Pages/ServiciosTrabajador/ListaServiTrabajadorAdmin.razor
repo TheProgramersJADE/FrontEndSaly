@@ -6,6 +6,394 @@
 
 <PageTitle>Servicios - Trabajador</PageTitle>
 
+<h3 class="form-title">👷‍♂ Gestión de Servicios por Trabajador</h3>
+
+@if (detalle == null && eliminar == null && editar == null)
+{
+    <div class="login-form">
+        <!-- 🔍 Filtro por ID -->
+        <div class="mb-3 d-flex flex-wrap align-items-center">
+            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
+            <button class="btn styled-btn primary mb-2 me-2" @onclick="FiltrarPorId">🔍 Buscar</button>
+            <button class="btn styled-btn secondary mb-2" @onclick="LimpiarFiltro">↩ Limpiar</button>
+        </div>
+
+        <!-- 📊 Tabla principal -->
+        @if (servicios == null)
+        {
+            <p class="mensaje">Cargando registros...</p>
+        }
+        else if (!servicios.Any())
+        {
+            <p class="mensaje">⚠ No hay relaciones registradas en la base de datos.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table styled-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Servicio</th>
+                            <th>Trabajador</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in servicios.Skip((paginaActual - 1) * registrosPorPagina).Take(registrosPorPagina))
+                        {
+                            <tr>
+                                <td>@s.Id</td>
+                                <td>@GetNombreServicio(s.IdServicio)</td>
+                                <td>@s.IdTrabajador</td>
+                                <td>
+                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">👁 Ver</button>
+                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))">✏ Editar</button>
+                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarEliminar(s))">🗑 Eliminar</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- 🔢 Paginación -->
+                <div class="d-flex justify-content-center mt-3">
+                    <button class="btn styled-btn secondary me-2" @onclick="AnteriorPagina" disabled="@(paginaActual == 1)">⬅ Anterior</button>
+                    <span class="align-self-center">Página @paginaActual de @TotalPaginas</span>
+                    <button class="btn styled-btn secondary ms-2" @onclick="SiguientePagina" disabled="@(paginaActual == TotalPaginas)">Siguiente ➡</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else if (detalle != null && eliminar == null && editar == null)
+{
+    <div class="login-form">
+        <div class="card styled-card p-3 mb-3">
+            <p><strong>ID:</strong> @detalle.Id</p>
+            <p><strong>Servicio:</strong> @GetNombreServicio(detalle.IdServicio)</p>
+            <p><strong>ID Trabajador:</strong> @detalle.IdTrabajador</p>
+        </div>
+        <button class="btn styled-btn secondary" @onclick="Regresar">🔙 Volver</button>
+    </div>
+}
+else if (editar != null)
+{
+    <div class="login-form">
+        <div class="card styled-card p-3 mb-3">
+            <h5>✏ Editar</h5>
+
+            <div class="mb-3">
+                <label>Servicio</label>
+                <select class="form-select styled-input" @bind="editar.IdServicio">
+                    @foreach (var s in serviciosDisponibles)
+                    {
+                        <option value="@s.Id">@s.Nombre_Servicio</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label>ID Trabajador</label>
+                <input type="number" class="form-control styled-input" @bind="editar.IdTrabajador" />
+            </div>
+
+            <button class="btn styled-btn primary me-2" @onclick="ActualizarAsync">💾 Guardar Cambios</button>
+            <button class="btn styled-btn secondary" @onclick="Regresar">Cancelar</button>
+        </div>
+    </div>
+}
+else if (eliminar != null)
+{
+    <div class="login-form border-danger">
+        <div class="alert alert-warning mb-3" role="alert">
+            ⚠ ¿Seguro que deseas eliminar esta relación?
+        </div>
+
+        <p><strong>ID:</strong> @eliminar.Id</p>
+        <p><strong>Servicio:</strong> @GetNombreServicio(eliminar.IdServicio)</p>
+        <p><strong>ID Trabajador:</strong> @eliminar.IdTrabajador</p>
+
+        <div class="d-flex mt-3">
+            <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminarAsync">✅ Eliminar</button>
+            <button class="btn styled-btn secondary btn-sm" @onclick="Regresar">Cancelar</button>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    /* --- Aquí va todo tu CSS existente, sin cambios --- */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 900px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn.info {
+            background-color: #85c1e9;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn.warning {
+            background-color: #f5b041;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn.danger {
+            background-color: #e74c3c;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+        }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+        .styled-table th {
+            background-color: #a569bd;
+            color: #fff;
+            text-align: center;
+            padding: 0.8rem;
+        }
+
+        .styled-table td {
+            padding: 0.8rem;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
+
+    .styled-card {
+        border-radius: 16px;
+        background-color: #f7e6fa;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    .styled-table th, .styled-table td {
+        vertical-align: middle;
+    }
+</style>
+
+@code {
+    private List<ServicioTrabajadorDTO> servicios;
+    private ServicioTrabajadorDTO detalle = null;
+    private ServicioTrabajadorDTO editar = null;
+    private ServicioTrabajadorDTO eliminar = null;
+    private string mensaje;
+    private int? filtroId;
+    private List<ServicioDTO> serviciosDisponibles;
+
+    // ✨ Paginación
+    private int paginaActual = 1;
+    private int registrosPorPagina = 5;
+    private int TotalPaginas => (int)Math.Ceiling((double)(servicios?.Count ?? 0) / registrosPorPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token)) { Navigation.NavigateTo("/"); return; }
+        await CargarServiciosAsync();
+        await CargarServiciosDisponiblesAsync();
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://gestionsalyapi.onrender.com/servicio-trabajador");
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error al cargar registros: {ex.Message}"; }
+    }
+
+    private async Task CargarServiciosDisponiblesAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            serviciosDisponibles = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error al cargar servicios disponibles: {ex.Message}"; }
+    }
+
+    private string GetNombreServicio(int idServicio) => serviciosDisponibles?.FirstOrDefault(s => s.Id == idServicio)?.Nombre_Servicio ?? $"ID {idServicio}";
+
+    private async Task FiltrarPorId()
+    {
+        if (filtroId == null) { await CargarServiciosAsync(); return; }
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var resultado = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}");
+            servicios = resultado != null ? new List<ServicioTrabajadorDTO> { resultado } : new List<ServicioTrabajadorDTO>();
+            paginaActual = 1;
+        }
+        catch (Exception ex) { mensaje = $"🚨 No se encontró el registro o error: {ex.Message}"; }
+    }
+
+    private async Task LimpiarFiltro() { filtroId = null; paginaActual = 1; await CargarServiciosAsync(); }
+    private async Task VerDetalleAsync(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error al obtener detalle: {ex.Message}"; }
+    }
+    private async Task EditarAsync(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            editar = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error al cargar datos para edición: {ex.Message}"; }
+    }
+    private async Task ActualizarAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await Http.PutAsJsonAsync($"https://gestionsalyapi.onrender.com/servicio-trabajador/{editar.Id}", editar);
+            if (response.IsSuccessStatusCode) { mensaje = "✅ Registro actualizado correctamente."; editar = null; await CargarServiciosAsync(); }
+            else { mensaje = $"❌ Error al actualizar: {response.ReasonPhrase}"; }
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error de conexión: {ex.Message}"; }
+    }
+    private void MostrarEliminar(ServicioTrabajadorDTO s) { eliminar = s; }
+    private async Task ConfirmarEliminarAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await Http.DeleteAsync($"https://gestionsalyapi.onrender.com/servicio-trabajador/{eliminar.Id}");
+            if (response.IsSuccessStatusCode) { mensaje = "✅ Registro eliminado correctamente."; eliminar = null; await CargarServiciosAsync(); }
+            else { mensaje = $"❌ Error: {response.ReasonPhrase}"; }
+        }
+        catch (Exception ex) { mensaje = $"🚨 Error: {ex.Message}"; }
+    }
+    private void Regresar() { detalle = null; editar = null; eliminar = null; mensaje = string.Empty; }
+
+    // ✨ Métodos paginación
+    private void SiguientePagina()
+    {
+        if (paginaActual < TotalPaginas) paginaActual++;
+    }
+
+    private void AnteriorPagina()
+    {
+        if (paginaActual > 1) paginaActual--;
+    }
+
+    public class ServicioTrabajadorDTO
+    {
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("id_servicio")] public int IdServicio { get; set; }
+        [JsonPropertyName("id_trabajador")] public int IdTrabajador { get; set; }
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")] public int Id { get; set; }
+        [JsonPropertyName("nombre_servicio")] public string Nombre_Servicio { get; set; }
+        [JsonPropertyName("descripcion")] public string Descripcion { get; set; }
+        [JsonPropertyName("duracion")] public int Duracion { get; set; }
+        [JsonPropertyName("precio")] public string Precio { get; set; }
+    }
+}
+
+
+
+@* @page "/ServiciosTrabajador/listaServiTrabajadorAdmin"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Servicios - Trabajador</PageTitle>
+
 <h3>👷‍♂️ Gestión de Servicios por Trabajador</h3>
 
 @if (detalle == null && eliminar == null && editar == null)
@@ -343,3 +731,4 @@ else if (eliminar != null)
         public string Precio { get; set; }
     }
 }
+ *@

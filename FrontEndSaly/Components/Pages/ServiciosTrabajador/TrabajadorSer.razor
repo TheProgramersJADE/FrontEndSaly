@@ -4,6 +4,450 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+<h3 class="form-title">Gestión de Servicios-Trabajador</h3>
+
+@if (registroDetalle == null && !crearNuevo)
+{
+    <div class="login-form">
+        <div class="mb-3 d-flex flex-wrap align-items-center">
+            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
+            <button class="btn styled-btn primary mb-2 me-2" @onclick="BuscarPorIdAsync">Buscar</button>
+            <button class="btn styled-btn secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
+        </div>
+
+        <button class="btn styled-btn primary mb-3" @onclick="MostrarFormularioCrear">Crear Nuevo</button>
+
+        @if (registros == null)
+        {
+            <p class="mensaje">Cargando registros...</p>
+        }
+        else if (!registros.Any())
+        {
+            <p class="mensaje">No hay registros disponibles.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table styled-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Servicio</th>
+                            <th>Trabajador</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in registros.Skip((paginaActual - 1) * registrosPorPagina).Take(registrosPorPagina))
+                        {
+                            <tr>
+                                <td>@r.Id</td>
+                                <td>@listaServicios.FirstOrDefault(s => s.Id == r.Id_Servicio)?.Nombre_Servicio</td>
+                                <td>@ObtenerNombreTrabajador(r.Id_Trabajador)</td>
+                                <td>
+                                    <button class="btn styled-btn info btn-sm" @onclick="() => VerDetalle(r.Id)">Ver</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <!-- 🔢 Paginación -->
+                <div class="d-flex justify-content-center mt-3">
+                    <button class="btn styled-btn secondary me-2" @onclick="AnteriorPagina" disabled="@(paginaActual == 1)">⬅ Anterior</button>
+                    <span class="align-self-center">Página @paginaActual de @TotalPaginas</span>
+                    <button class="btn styled-btn secondary ms-2" @onclick="SiguientePagina" disabled="@(paginaActual == TotalPaginas)">Siguiente ➡</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else if (registroDetalle != null)
+{
+    <div class="login-form styled-card">
+        <h4>Detalle del Registro</h4>
+        <p><strong>ID:</strong> @registroDetalle.Id</p>
+        <p><strong>Servicio:</strong> @listaServicios.FirstOrDefault(s => s.Id == registroDetalle.Id_Servicio)?.Nombre_Servicio</p>
+        <p><strong>Trabajador:</strong> @ObtenerNombreTrabajador(registroDetalle.Id_Trabajador)</p>
+        <button class="btn styled-btn secondary" @onclick="Regresar">Volver</button>
+    </div>
+}
+else if (crearNuevo)
+{
+    <div class="login-form styled-card">
+        <h4>Crear Nuevo Registro</h4>
+        <p>Servicio:</p>
+        <select class="form-select styled-input mb-3" @bind="nuevoRegistro.Id_Servicio">
+            <option value="">-- Selecciona un servicio --</option>
+            @foreach (var s in listaServicios)
+            {
+                <option value="@s.Id">@s.Nombre_Servicio</option>
+            }
+        </select>
+
+        @if (!esAdmin)
+        {
+            <p>Trabajador: <strong>@username</strong></p>
+            <button class="btn styled-btn primary me-2" @onclick="CrearRegistro">Guardar</button>
+        }
+        else
+        {
+            <p>❌ Los administradores no pueden crear asignaciones</p>
+            <button class="btn styled-btn primary" disabled>Guardar</button>
+        }
+        <button class="btn styled-btn secondary" @onclick="CancelarCrear">Cancelar</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    /* --- Aquí va todo tu CSS existente, sin cambios --- */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    .login-form {
+        max-width: 900px;
+        margin: 0 auto 2rem auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin: 0.3rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn.info {
+            background-color: #85c1e9;
+            border: none;
+            color: #111;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+        }
+
+    .styled-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+        .styled-table th {
+            background-color: #a569bd;
+            color: #fff;
+            text-align: center;
+            padding: 0.8rem;
+        }
+
+        .styled-table td {
+            padding: 0.8rem;
+            border-top: 1px solid #ddd;
+            text-align: center;
+        }
+
+    .styled-card {
+        border-radius: 16px;
+        background-color: #f7e6fa;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        padding: 1.5rem;
+    }
+
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+</style>
+
+@code {
+    private List<ServicioTrabajadorDTO> registros;
+    private ServicioTrabajadorDTO registroDetalle;
+    private ServicioTrabajadorDTO nuevoRegistro = new();
+
+    private bool crearNuevo = false;
+    private string mensaje;
+    private int? filtroId = null;
+
+    private List<ServicioDTO> listaServicios = new();
+    private List<TrabajadorDTO> trabajadores = new();
+    private string username;
+    private int userId;
+    private bool esAdmin;
+
+    // ✨ Paginación
+    private int paginaActual = 1;
+    private int registrosPorPagina = 5;
+    private int TotalPaginas => (int)Math.Ceiling((double)(registros?.Count ?? 0) / registrosPorPagina);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await ObtenerUsuarioLogueado();
+        await CargarListaServicios();
+        await CargarRegistros();
+    }
+
+    private async Task CargarListaServicios()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar lista de servicios: {ex.Message}";
+        }
+    }
+
+    private string ObtenerNombreTrabajador(int idTrabajador) => esAdmin ? trabajadores.FirstOrDefault(t => t.Id == idTrabajador)?.Nombre ?? "Desconocido" : username;
+
+    private async Task ObtenerUsuarioLogueado()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (!string.IsNullOrEmpty(token))
+        {
+            var handler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var jwt = handler.ReadJwtToken(token);
+
+            username = jwt.Claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "Desconocido";
+            userId = int.Parse(jwt.Claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "0");
+            var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == "role")?.Value ?? "";
+            esAdmin = roleClaim.Contains("Administrador", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private async Task CargarRegistros()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://gestionsalyapi.onrender.com/servicio-trabajador");
+
+            if (!esAdmin) registros = registros.Where(r => r.Id_Trabajador == userId).ToList();
+            paginaActual = 1;
+        }
+        catch (Exception ex)
+        {
+            mensaje = "Error al cargar registros: " + ex.Message;
+        }
+    }
+
+    private async Task BuscarPorIdAsync()
+    {
+        if (filtroId == null)
+        {
+            mensaje = "Por favor ingresa un ID válido.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var registro = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}");
+
+            if (registro != null)
+            {
+                registros = new List<ServicioTrabajadorDTO> { registro };
+                mensaje = null;
+            }
+            else
+            {
+                registros = new List<ServicioTrabajadorDTO>();
+                mensaje = "No se encontró ningún registro con ese ID.";
+            }
+            paginaActual = 1;
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al buscar registro: {ex.Message}";
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        filtroId = null;
+        mensaje = null;
+        await CargarRegistros();
+    }
+
+    private async Task VerDetalle(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            registroDetalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+        }
+        catch (Exception ex)
+        {
+            mensaje = "Error al obtener detalle: " + ex.Message;
+        }
+    }
+
+    private void Regresar()
+    {
+        registroDetalle = null;
+        crearNuevo = false;
+    }
+
+    private void MostrarFormularioCrear()
+    {
+        crearNuevo = true;
+        nuevoRegistro = new ServicioTrabajadorDTO();
+    }
+
+    private async Task CrearRegistro()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/servicio-trabajador", new { id_servicio = nuevoRegistro.Id_Servicio });
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Registro creado correctamente.";
+                crearNuevo = false;
+                await CargarRegistros();
+            }
+            else
+            {
+                mensaje = "❌ Error al crear registro: " + response.ReasonPhrase;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = "🚨 Error de conexión: " + ex.Message;
+        }
+    }
+
+    private void CancelarCrear() => crearNuevo = false;
+
+    // ✨ Métodos de paginación
+    private void SiguientePagina()
+    {
+        if (paginaActual < TotalPaginas) paginaActual++;
+    }
+
+    private void AnteriorPagina()
+    {
+        if (paginaActual > 1) paginaActual--;
+    }
+
+    public class ServicioTrabajadorDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("id_servicio")]
+        public int Id_Servicio { get; set; }
+
+        [JsonPropertyName("id_trabajador")]
+        public int Id_Trabajador { get; set; }
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+
+    public class TrabajadorDTO
+    {
+        [JsonPropertyName("id")] public int Id { get; set; }
+        [JsonPropertyName("nombre")] public string Nombre { get; set; }
+    }
+}
+
+@* @page "/ServiciosTrabajador/servicio-trabajador"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
 <h3>Gestión de Servicios-Trabajador</h3>
 
 @if (registroDetalle == null && !crearNuevo)
@@ -335,4 +779,4 @@ else if (crearNuevo)
     }
 }
 
-@* Comentario *@
+@* Comentario *@ 
