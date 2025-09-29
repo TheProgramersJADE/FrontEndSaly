@@ -4,38 +4,64 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 
-<h3 class="form-title">Iniciar Sesión</h3>
-
-<EditForm Model="loginModel" OnValidSubmit="LoginAsync" class="login-form">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="form-group">
-        <label>Email:</label>
-        <InputText @bind-Value="loginModel.Email" class="form-control styled-input" />
+<div class="login-container">
+    <!-- Logo arriba -->
+    <div class="logo-container">
+        <img src="images/logito.jpg" alt="Logo Empresa" class="logo" />
     </div>
 
-    <div class="form-group">
-        <label>Password:</label>
-        <InputText @bind-Value="loginModel.Password" class="form-control styled-input" type="password" />
+    <h3 class="form-title">Iniciar Sesión</h3>
+
+    <EditForm Model="loginModel" OnValidSubmit="LoginAsync" class="login-form">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label>Email:</label>
+            <InputText @bind-Value="loginModel.Email" class="form-control styled-input" />
+        </div>
+
+        <div class="form-group">
+            <label>Password:</label>
+            <InputText @bind-Value="loginModel.Password" class="form-control styled-input" type="password" />
+        </div>
+
+        <button type="submit" class="btn styled-btn primary">Ingresar</button>
+    </EditForm>
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alerta">
+            @mensaje
+        </div>
+    }
+
+    <div class="mt-3 text-center">
+        <p>¿No tienes cuenta?</p>
+        <button class="btn styled-btn secondary" @onclick="IrARegistro">Regístrate aquí</button>
     </div>
-
-    <button type="submit" class="btn styled-btn primary">Ingresar</button>
-</EditForm>
-
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <div class="alerta">
-        @mensaje
-    </div>
-}
-
-<div class="mt-3 text-center">
-    <p>¿No tienes cuenta?</p>
-    <button class="btn styled-btn secondary" @onclick="IrARegistro">Regístrate aquí</button>
 </div>
 
 <style>
+    /* Contenedor general */
+    .login-container {
+        max-width: 400px;
+        margin: 2rem auto;
+        text-align: center;
+    }
+
+    /* Logo */
+    .logo-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .logo {
+        width: 120px; /* Ajusta según tu logo */
+        height: auto;
+        border-radius: 8px; /* opcional */
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* opcional */
+    }
+
     /* Título */
     .form-title {
         font-family: 'Lilita One', cursive;
@@ -43,13 +69,10 @@
         font-weight: bold;
         color: #111;
         margin-bottom: 2rem;
-        text-align: center;
     }
 
     /* Formulario contenedor */
     .login-form {
-        max-width: 400px;
-        margin: 0 auto;
         padding: 2rem;
         background-color: #f7e6fa;
         border-radius: 16px;
@@ -110,7 +133,7 @@
         border-radius: 12px;
         font-weight: bold;
         color: #fff;
-        background-color: #a569bd; /* rojo agradable */
+        background-color: #a569bd;
         text-align: center;
         box-shadow: 0 3px 6px rgba(0,0,0,0.15);
     }
@@ -131,7 +154,6 @@
 
     private async Task LoginAsync()
     {
-        // Validaciones antes de llamar a la API
         if (string.IsNullOrWhiteSpace(loginModel.Email) && string.IsNullOrWhiteSpace(loginModel.Password))
         {
             mensaje = "⚠️ Por favor ingrese sus credenciales";
@@ -161,7 +183,6 @@
             }
             else
             {
-                // Mostrar mensaje amigable si credenciales incorrectas
                 mensaje = "❌ Credenciales incorrectas, intente nuevamente por favor";
             }
         }
@@ -189,6 +210,7 @@
         public int Role_Id { get; set; }
     }
 }
+
 
 
 @* @page "/"

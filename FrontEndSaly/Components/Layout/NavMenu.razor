@@ -1,8 +1,128 @@
-﻿@* <div class="top-row ps-3 navbar">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Beauty Saly</a>
+﻿@* NavMenu.razor *@
+<div class="side-nav">
+    <div class="nav-header">Beauty Saly</div>
+
+    <div class="nav-links">
+        <NavLink class="nav-link" href="counter">
+            <i class="fas fa-users"></i> Usuarios
+        </NavLink>
+
+        <NavLink class="nav-link" href="/rol/roles">
+            <i class="fas fa-user-shield"></i> Roles
+        </NavLink>
+
+        <NavLink class="nav-link" href="/Servicio/servicios">
+            <i class="fas fa-spray-can"></i> Servicios
+        </NavLink>
+
+        @*<NavLink class="nav-link" href="/Servicio/servicios">
+            <i class="fas fa-briefcase"></i> Servicios
+        </NavLink> *@
+
+        <NavLink class="nav-link" href="/Cita/citas">
+            <i class="fas fa-calendar-alt"></i> Citas
+        </NavLink>
     </div>
-</div> *@
+</div>
+
+<style>
+    body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f3f3f3;
+        color: #1f2937;
+    }
+
+    /* Sidebar principal */
+    .side-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 250px;
+        height: 100vh;
+        background: linear-gradient(180deg, #7851A9, #B048B5); /* degradado morado elegante */
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        box-shadow: 3px 0 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+    }
+
+    /* Encabezado del menú */
+    .nav-header {
+        font-size: 1.6rem;
+        font-weight: bold;
+        background-color: rgba(255,255,255,0.15);
+        padding: 15px;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 30px;
+        letter-spacing: 1px;
+        box-shadow: inset 0 0 6px rgba(255,255,255,0.1);
+    }
+
+    /* Contenedor de links */
+    .nav-links {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+        /* Estilo de enlaces */
+        .nav-links .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 18px;
+            color: #fff;
+            background-color: rgba(255,255,255,0.08);
+            text-decoration: none;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+            /* Iconos */
+            .nav-links .nav-link i {
+                width: 20px;
+                font-size: 1.2rem;
+            }
+
+            /* Hover efecto */
+            .nav-links .nav-link:hover {
+                background-color: rgba(255,255,255,0.2);
+                color: #fff;
+                border-left: 4px solid #f5f5dc;
+                transform: translateX(4px);
+            }
+
+        /* Activo */
+        .nav-links .active {
+            background-color: #9b59b6;
+            border-left: 4px solid #fff;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+    /* Contenido principal */
+    .main-content {
+        margin-left: 250px;
+        padding: 10px;
+    }
+</style>
+
+<!-- Importa FontAwesome en _Host.cshtml o Layout -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+
+
+
+@* 
 <div class="nav-item px-3">
     <NavLink class="nav-link styled-title">
         <span class="bi bi-person-circle"></span> Beauty Saly
@@ -136,3 +256,4 @@
             box-shadow: 0 5px 10px rgba(0,0,0,0.2);
         }
 </style>
+ *@
