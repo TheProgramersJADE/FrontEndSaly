@@ -6,7 +6,7 @@
 
 <PageTitle>Servicios - Trabajador</PageTitle>
 
-<h3 class="form-title">👷‍♂ Gestión de Servicios por Trabajador</h3>
+<h3 class="form-title"> Gestión de Servicios por Trabajador</h3>
 
 @if (detalle == null && eliminar == null && editar == null)
 {
@@ -47,9 +47,9 @@
                                 <td>@GetNombreServicio(s.IdServicio)</td>
                                 <td>@s.IdTrabajador</td>
                                 <td>
-                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">👁 Ver</button>
-                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))">✏ Editar</button>
-                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarEliminar(s))">🗑 Eliminar</button>
+                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">Ver</button>
+                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))"> Editar</button>
+                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarEliminar(s))"> Eliminar</button>
                                 </td>
                             </tr>
                         }

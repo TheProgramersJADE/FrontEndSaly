@@ -18,12 +18,13 @@
 
             <select class="form-select styled-input me-2 mb-2" @bind="filtroRoleId">
                 <option value="">Todos los roles</option>
-                <option value="1">Cliente</option>
-                <option value="2">Trabajador</option>
-                <option value="3">Administrador</option>
+                <option value="1">CLIENTE</option>
+                <option value="2">TRABAJADOR</option>
+                <option value="3">ADMINISTRADOR</option>
             </select>
 
             <button class="btn styled-btn primary mb-2" @onclick="BuscarUsuariosAsync">Buscar</button>
+                <button class="btn styled-btn secondary mb-2" @onclick="LimpiarFiltros">Limpiar</button>
         </div>
 
         <button class="btn styled-btn secondary mb-3" @onclick="IrACrearUsuario">Crear Usuario</button>
@@ -91,7 +92,7 @@ else if (usuarioDetalle != null && usuarioEliminar == null)
             <p>
                 <strong>Rol:</strong>
                 @(
-                    usuarioDetalle.Role_Id == 3 ? "Administrador" :
+                    usuarioDetalle.Role_Id == 3 ? "Admin" :
                     usuarioDetalle.Role_Id == 2 ? "Trabajador" :
                     usuarioDetalle.Role_Id == 1 ? "Cliente" : "Desconocido"
                 )
@@ -289,6 +290,13 @@ else if (usuarioEliminar != null)
         }
     }
 
+    private async Task LimpiarFiltros()
+{
+    filtroEmail = string.Empty;
+    filtroRoleId = string.Empty;
+    await CargarUsuariosAsync();
+    paginaActual = 1;
+}
     private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario/gestion");
     private void EditarUsuario(int id) => Navigation.NavigateTo($"/usuarios/editar/{id}");
 
