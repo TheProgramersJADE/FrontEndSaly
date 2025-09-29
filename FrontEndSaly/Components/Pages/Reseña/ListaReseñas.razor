@@ -226,9 +226,19 @@ else if (resennaEditar != null)
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
+            // Creamos un objeto solo con los campos que el backend espera
+            var payload = new
+            {
+                nombre_cliente = resennaEditar.Nombre_Cliente,
+                nombre_trabajador = resennaEditar.Nombre_Trabajador,
+                calificacion = resennaEditar.Calificacion,
+                comentario = resennaEditar.Comentario,
+                fecha = resennaEditar.Fecha?.ToString("yyyy-MM-dd") // opcional, evita problemas de formato
+            };
+
             var response = await Http.PutAsJsonAsync(
                 $"https://gestionsalyapi.onrender.com/resennas/{resennaEditar.Id}",
-                resennaEditar
+                payload
             );
 
             if (response.IsSuccessStatusCode)
@@ -239,7 +249,9 @@ else if (resennaEditar != null)
             }
             else
             {
-                mensaje = $"❌ Error al actualizar reseña: {response.ReasonPhrase}";
+                // Leemos el mensaje de error devuelto por el backend si existe
+                var errorContent = await response.Content.ReadAsStringAsync();
+                mensaje = $"❌ Error al actualizar reseña: {response.ReasonPhrase}. {errorContent}";
             }
         }
         catch (Exception ex)
@@ -247,6 +259,7 @@ else if (resennaEditar != null)
             mensaje = $"🚨 Error de conexión: {ex.Message}";
         }
     }
+
 
     private void Regresar()
     {

@@ -8,45 +8,133 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<h3>Crear Reseña</h3>
+<h3 class="form-title">📝 Crear Reseña</h3>
 
-<EditForm Model="@resennaNueva" OnValidSubmit="CrearResennaAsync">
+<EditForm Model="@resennaNueva" OnValidSubmit="CrearResennaAsync" class="login-form">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div class="mb-3">
-        <label>Nombre Cliente</label>
-        <InputText class="form-control" @bind-Value="resennaNueva.Nombre_Cliente" />
+    <div class="form-group">
+        <label>Nombre Cliente:</label>
+        <InputText class="form-control styled-input" @bind-Value="resennaNueva.Nombre_Cliente" />
     </div>
 
-    <div class="mb-3">
-        <label>Nombre Trabajador</label>
-        <InputText class="form-control" @bind-Value="resennaNueva.Nombre_Trabajador" />
+    <div class="form-group">
+        <label>Nombre Trabajador:</label>
+        <InputText class="form-control styled-input" @bind-Value="resennaNueva.Nombre_Trabajador" />
     </div>
 
-    <div class="mb-3">
-        <label>Calificación</label>
-        <InputNumber class="form-control" @bind-Value="resennaNueva.Calificacion" min="1" max="5" />
+    <div class="form-group">
+        <label>Calificación (1-5):</label>
+        <InputNumber class="form-control styled-input" @bind-Value="resennaNueva.Calificacion" min="1" max="5" />
     </div>
 
-    <div class="mb-3">
-        <label>Comentario</label>
-        <InputTextArea class="form-control" @bind-Value="resennaNueva.Comentario" />
+    <div class="form-group">
+        <label>Comentario:</label>
+        <InputTextArea class="form-control styled-input" @bind-Value="resennaNueva.Comentario" />
     </div>
 
-    <div class="mb-3">
-        <label>Fecha</label>
-        <InputDate class="form-control" @bind-Value="resennaNueva.Fecha" />
+    <div class="form-group">
+        <label>Fecha:</label>
+        <InputDate class="form-control styled-input" @bind-Value="resennaNueva.Fecha" />
     </div>
 
-    <button type="submit" class="btn btn-success">Guardar</button>
-    <button type="button" class="btn btn-secondary ms-2" @onclick="Cancelar">Cancelar</button>
+    <div class="text-center">
+        <button type="button" class="btn styled-btn secondary" @onclick="Cancelar">Cancelar</button>
+        <button type="submit" class="btn styled-btn primary">✅ Guardar</button>
+    </div>
 </EditForm>
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
-    <p class="mt-3">@mensaje</p>
+    <p class="mensaje">@mensaje</p>
 }
+
+<style>
+    /* Título */
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #111;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+
+    /* Contenedor */
+    .login-form {
+        max-width: 450px;
+        margin: 0 auto;
+        padding: 2rem;
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    /* Inputs */
+    .styled-input {
+        border-radius: 12px;
+        border: 2px solid #a569bd;
+        padding: 0.7rem 1rem;
+        margin-bottom: 1.2rem;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        color: #111;
+        background-color: #fff;
+    }
+
+        .styled-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 0.2rem #9b59b6;
+            border-color: #9b59b6;
+        }
+
+    /* Botones */
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.7rem 1.5rem;
+        margin: 0.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        color: #111;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+        }
+
+        .styled-btn.secondary {
+            background-color: #d9a3e0;
+            border: none;
+        }
+
+        .styled-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+            color: #111;
+        }
+
+    /* Mensaje */
+    .mensaje {
+        font-weight: bold;
+        margin-top: 1rem;
+        text-align: center;
+        color: #6f2c6f;
+    }
+
+    /* Labels */
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+        display: block;
+        color: #111;
+        font-size: 1.05rem;
+    }
+</style>
 
 @code {
     private ResennaDTO resennaNueva = new();
@@ -70,13 +158,8 @@
 
             if (response.IsSuccessStatusCode)
             {
-                // Mostrar mensaje en el formulario
                 mensaje = "✅ Reseña creada correctamente.";
-
-                // Esperar un momento para que el usuario vea el mensaje
                 await Task.Delay(1500);
-
-                // Redirigir a SobreNosotros
                 Navigation.NavigateTo("/sobrenosotros");
             }
             else
@@ -116,14 +199,10 @@
         [JsonPropertyName("comentario")]
         public string Comentario { get; set; }
 
-        // Campo real de fecha en C#
         [JsonIgnore]
         public DateTime Fecha { get; set; } = DateTime.Today;
 
-        // Campo que se manda al backend en formato correcto
         [JsonPropertyName("fecha")]
         public string FechaString { get; set; }
     }
 }
-
-

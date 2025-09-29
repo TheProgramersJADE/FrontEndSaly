@@ -10,7 +10,7 @@
     </div>
 
     <!-- Carrusel de imágenes -->
-    <div id="carruselSalon" class="carousel slide mb-5" data-bs-ride="carousel">
+    <div id="carruselSalon" class="carousel slide mb-5" data-bs-ride="carousel" data-bs-interval="4000">
         <div class="carousel-inner">
             <div class="carousel-item active">
                 <img src="images/coso2.jpg" class="d-block w-100" alt="Recepción del salón" />
@@ -98,12 +98,12 @@
 
     /* Carrusel más compacto */
     #carruselSalon {
-        max-height: 500px; /* Ajusta según quieras que se vea */
+        max-height: 400px; /* Ajusta según quieras que se vea */
         overflow: hidden;
     }
 
         #carruselSalon .carousel-item img {
-            height: 500px; /* Igual que el max-height */
+            height: 400px; /* Igual que el max-height */
             object-fit: cover; /* Ajusta la imagen sin deformarla */
         }
 
