@@ -43,7 +43,7 @@
                     {
                         <tr>
                             <td>@r.Id</td>
-                            <td>@r.Id_Servicio</td>
+                            <td>@listaServicios.FirstOrDefault(s => s.Id == r.Id_Servicio)?.Nombre_Servicio</td>
                             <td>@r.Id_Trabajador</td>
                             <td>
                                 <button @onclick="() => VerDetalle(r.Id)">Ver</button>
@@ -62,7 +62,7 @@ else if (registroDetalle != null && registroEliminar == null)
     <div>
         <h4>Detalle del Registro</h4>
         <p><strong>ID:</strong> @registroDetalle.Id</p>
-        <p><strong>ID Servicio:</strong> @registroDetalle.Id_Servicio</p>
+        <p><strong>Servicio:</strong> @listaServicios.FirstOrDefault(s => s.Id == registroDetalle.Id_Servicio)?.Nombre_Servicio</p>
         <p><strong>ID Trabajador:</strong> @registroDetalle.Id_Trabajador</p>
 
         <button @onclick="Regresar">Volver</button>
@@ -73,7 +73,7 @@ else if (registroEliminar != null)
     <div>
         <p>⚠️ ¿Estás seguro de que deseas eliminar este registro?</p>
         <p><strong>ID:</strong> @registroEliminar.Id</p>
-        <p><strong>ID Servicio:</strong> @registroEliminar.Id_Servicio</p>
+        <p><strong>Servicio:</strong> @listaServicios.FirstOrDefault(s => s.Id == registroEliminar.Id_Servicio)?.Nombre_Servicio</p>
         <p><strong>ID Trabajador:</strong> @registroEliminar.Id_Trabajador</p>
 
         <button @onclick="EliminarRegistro">Eliminar</button>
@@ -84,8 +84,14 @@ else if (crearNuevo)
 {
     <div>
         <h4>Crear Nuevo Registro</h4>
-        <p>ID Servicio:</p>
-        <input type="number" @bind="nuevoRegistro.Id_Servicio" />
+        <p>Servicio:</p>
+        <select class="form-select" @bind="nuevoRegistro.Id_Servicio">
+            <option value="">-- Selecciona un servicio --</option>
+            @foreach (var s in listaServicios)
+            {
+                <option value="@s.Id">@s.Nombre_Servicio</option>
+            }
+        </select>
         <p>(ID Trabajador se toma del token automáticamente)</p>
 
         <button @onclick="CrearRegistro">Guardar</button>
@@ -96,10 +102,17 @@ else if (editarExistente)
 {
     <div>
         <h4>Editar Registro</h4>
-        <p>ID Servicio:</p>
-        <input type="number" @bind="registroEditar.Id_Servicio" />
+        <p>Servicio:</p>
+        <select class="form-select" @bind="registroEditar.Id_Servicio">
+            <option value="">-- Selecciona un servicio --</option>
+            @foreach (var s in listaServicios)
+            {
+                <option value="@s.Id">@s.Nombre_Servicio</option>
+            }
+        </select>
         <p>ID Trabajador:</p>
         <input type="number" @bind="registroEditar.Id_Trabajador" />
+
 
         <button @onclick="GuardarEdicion">Guardar Cambios</button>
         <button @onclick="CancelarEditar">Cancelar</button>
@@ -123,10 +136,31 @@ else if (editarExistente)
     private string mensaje;
     private int? filtroId = null;
 
+    private List<ServicioDTO> listaServicios = new(); // Lista para el combobox
+
+    private async Task CargarListaServicios()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar lista de servicios: {ex.Message}";
+        }
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
         await CargarRegistros();
+        await CargarListaServicios(); // Cargamos lista de servicios
     }
 
     private async Task CargarRegistros()
@@ -357,5 +391,23 @@ else if (editarExistente)
 
         [JsonPropertyName("id_trabajador")]
         public int Id_Trabajador { get; set; }
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
     }
 }
