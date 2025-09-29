@@ -1,0 +1,361 @@
+﻿@page "/ServiciosTrabajador/servicio-trabajador"
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>Gestión de Servicios-Trabajador</h3>
+
+@if (registroDetalle == null && registroEliminar == null && !crearNuevo && !editarExistente)
+{
+    <div class="mb-3 d-flex align-items-center flex-wrap">
+        <input type="number" class="form-control me-2 mb-2" placeholder="Buscar por ID..." @bind="filtroId" />
+
+        <button class="btn btn-primary mb-2" @onclick="BuscarPorIdAsync">Buscar</button>
+        <button class="btn btn-secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
+    </div>
+
+
+    <div>
+        <button @onclick="MostrarFormularioCrear">Crear Nuevo</button>
+
+        @if (registros == null)
+        {
+            <p>Cargando registros...</p>
+        }
+        else if (!registros.Any())
+        {
+            <p>No hay registros disponibles.</p>
+        }
+        else
+        {
+            <table border="1" cellpadding="5" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ID Servicio</th>
+                        <th>ID Trabajador</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in registros)
+                    {
+                        <tr>
+                            <td>@r.Id</td>
+                            <td>@r.Id_Servicio</td>
+                            <td>@r.Id_Trabajador</td>
+                            <td>
+                                <button @onclick="() => VerDetalle(r.Id)">Ver</button>
+                                <button @onclick="() => MostrarFormularioEditar(r.Id)">Editar</button>
+                                <button @onclick="() => ConfirmarEliminar(r)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+}
+else if (registroDetalle != null && registroEliminar == null)
+{
+    <div>
+        <h4>Detalle del Registro</h4>
+        <p><strong>ID:</strong> @registroDetalle.Id</p>
+        <p><strong>ID Servicio:</strong> @registroDetalle.Id_Servicio</p>
+        <p><strong>ID Trabajador:</strong> @registroDetalle.Id_Trabajador</p>
+
+        <button @onclick="Regresar">Volver</button>
+    </div>
+}
+else if (registroEliminar != null)
+{
+    <div>
+        <p>⚠️ ¿Estás seguro de que deseas eliminar este registro?</p>
+        <p><strong>ID:</strong> @registroEliminar.Id</p>
+        <p><strong>ID Servicio:</strong> @registroEliminar.Id_Servicio</p>
+        <p><strong>ID Trabajador:</strong> @registroEliminar.Id_Trabajador</p>
+
+        <button @onclick="EliminarRegistro">Eliminar</button>
+        <button @onclick="CancelarEliminar">Cancelar</button>
+    </div>
+}
+else if (crearNuevo)
+{
+    <div>
+        <h4>Crear Nuevo Registro</h4>
+        <p>ID Servicio:</p>
+        <input type="number" @bind="nuevoRegistro.Id_Servicio" />
+        <p>(ID Trabajador se toma del token automáticamente)</p>
+
+        <button @onclick="CrearRegistro">Guardar</button>
+        <button @onclick="CancelarCrear">Cancelar</button>
+    </div>
+}
+else if (editarExistente)
+{
+    <div>
+        <h4>Editar Registro</h4>
+        <p>ID Servicio:</p>
+        <input type="number" @bind="registroEditar.Id_Servicio" />
+        <p>ID Trabajador:</p>
+        <input type="number" @bind="registroEditar.Id_Trabajador" />
+
+        <button @onclick="GuardarEdicion">Guardar Cambios</button>
+        <button @onclick="CancelarEditar">Cancelar</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p>@mensaje</p>
+}
+
+@code {
+    private List<ServicioTrabajadorDTO> registros;
+    private ServicioTrabajadorDTO registroDetalle;
+    private ServicioTrabajadorDTO registroEliminar;
+    private ServicioTrabajadorDTO nuevoRegistro = new();
+    private ServicioTrabajadorDTO registroEditar = new();
+
+    private bool crearNuevo = false;
+    private bool editarExistente = false;
+    private string mensaje;
+    private int? filtroId = null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarRegistros();
+    }
+
+    private async Task CargarRegistros()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
+                "https://gestionsalyapi.onrender.com/servicio-trabajador"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = "Error al cargar registros: " + ex.Message;
+        }
+    }
+
+    private async Task BuscarPorIdAsync()
+    {
+        if (filtroId == null)
+        {
+            mensaje = "Por favor ingresa un ID válido.";
+            return;
+        }
+
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var registro = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}"
+            );
+
+            if (registro != null)
+            {
+                registros = new List<ServicioTrabajadorDTO> { registro }; // Solo un registro
+                mensaje = null; // Limpiamos mensaje
+            }
+            else
+            {
+                registros = new List<ServicioTrabajadorDTO>();
+                mensaje = "No se encontró ningún registro con ese ID.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            mensaje = $"🚨 Error al buscar registro: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error inesperado: {ex.Message}";
+        }
+    }
+
+    private async Task LimpiarBusqueda()
+    {
+        filtroId = null;            // Limpiamos el filtro
+        mensaje = null;             // Limpiamos cualquier mensaje
+        await CargarRegistros();    // Cargamos todos los registros nuevamente
+    }
+
+    private async Task VerDetalle(int id)
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            registroDetalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = "Error al obtener detalle: " + ex.Message;
+        }
+    }
+
+    private void Regresar()
+    {
+        registroDetalle = null;
+        registroEliminar = null;
+        crearNuevo = false;
+        editarExistente = false;
+    }
+
+    private void MostrarFormularioCrear()
+    {
+        crearNuevo = true;
+        nuevoRegistro = new ServicioTrabajadorDTO();
+    }
+
+    private async Task CrearRegistro()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PostAsJsonAsync(
+                "https://gestionsalyapi.onrender.com/servicio-trabajador",
+                new { id_servicio = nuevoRegistro.Id_Servicio }
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Registro creado correctamente.";
+                crearNuevo = false;
+                await CargarRegistros();
+            }
+            else
+            {
+                mensaje = "❌ Error al crear registro: " + response.ReasonPhrase;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = "🚨 Error de conexión: " + ex.Message;
+        }
+    }
+
+    private void CancelarCrear() => crearNuevo = false;
+
+    private void MostrarFormularioEditar(int id)
+    {
+        var registro = registros.FirstOrDefault(r => r.Id == id);
+        if (registro != null)
+        {
+            registroEditar = new ServicioTrabajadorDTO
+            {
+                Id = registro.Id,
+                Id_Servicio = registro.Id_Servicio,
+                Id_Trabajador = registro.Id_Trabajador
+            };
+            editarExistente = true;
+        }
+    }
+
+    private async Task GuardarEdicion()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.PutAsJsonAsync(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{registroEditar.Id}",
+                new
+                {
+                    id_servicio = registroEditar.Id_Servicio,
+                    id_trabajador = registroEditar.Id_Trabajador
+                }
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Registro actualizado correctamente.";
+                editarExistente = false;
+                await CargarRegistros();
+            }
+            else
+            {
+                mensaje = "❌ Error al actualizar: " + response.ReasonPhrase;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = "🚨 Error de conexión: " + ex.Message;
+        }
+    }
+
+    private void CancelarEditar() => editarExistente = false;
+
+    private void ConfirmarEliminar(ServicioTrabajadorDTO registro)
+    {
+        registroEliminar = registro;
+    }
+
+    private async Task EliminarRegistro()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.DeleteAsync(
+                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{registroEliminar.Id}"
+            );
+
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "✅ Registro eliminado.";
+                registroEliminar = null;
+                await CargarRegistros();
+            }
+            else
+            {
+                mensaje = "❌ Error al eliminar: " + response.ReasonPhrase;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = "🚨 Error de conexión: " + ex.Message;
+        }
+    }
+
+    private void CancelarEliminar()
+    {
+        registroEliminar = null;
+    }
+
+    public class ServicioTrabajadorDTO
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("id_servicio")]
+        public int Id_Servicio { get; set; }
+
+        [JsonPropertyName("id_trabajador")]
+        public int Id_Trabajador { get; set; }
+    }
+}
