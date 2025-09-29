@@ -9,7 +9,7 @@
 
 <h3 class="form-title">@tituloSeccion</h3>
 
-@if (citaDetalle == null && citaEliminar == null)
+@if (citaDetalle == null && citaEliminar == null && citaEditar == null)
 {
     <div class="login-form">
         <!-- búsqueda por ID -->
@@ -57,7 +57,7 @@
                                 <td>@cita.IdServicio</td>
                                 <td>
                                     <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerCita(cita.IdCita))">Ver</button>
-                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarCita(cita.IdCita))">Editar</button>
+                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() =>CargarFormularioEdicion(cita.IdCita))">Editar</button>
                                     <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(cita))">Eliminar</button>
                                 </td>
                             </tr>
@@ -105,6 +105,44 @@ else if (citaEliminar != null)
         </div>
     </div>
 }
+else if (citaEditar != null)
+{
+    <!-- Formulario de edición -->
+    <div class="login-form">
+        <h4 class="mb-3">✏️ Editar Cita #@citaEditar.IdCita</h4>
+
+        <div class="mb-3">
+            <label><strong>Nombre del Cliente:</strong></label>
+            <input class="form-control styled-input" @bind="citaEditar.NombreCliente" />
+        </div>
+
+        <div class="mb-3">
+            <label><strong>Teléfono del Cliente:</strong></label>
+            <input class="form-control styled-input" @bind="citaEditar.TelefonoCliente" />
+        </div>
+
+    <input type="datetime-local" class="form-control styled-input"
+       value="@citaEditar.FechaHora.ToString("yyyy-MM-ddTHH:mm")"
+       @onchange='@(e => citaEditar.FechaHora = DateTime.ParseExact(e.Value.ToString(), "yyyy-MM-ddTHH:mm", null))' />
+
+
+        <div class="mb-3">
+            <label><strong>Nombre del Trabajador:</strong></label>
+            <input class="form-control styled-input" @bind="citaEditar.NombreTrabajador" />
+        </div>
+
+        <div class="mb-3">
+            <label><strong>ID del Servicio:</strong></label>
+            <input type="number" class="form-control styled-input" @bind="citaEditar.IdServicio" />
+        </div>
+
+        <div class="d-flex mt-3">
+            <button class="btn styled-btn primary me-2" @onclick="GuardarCambios">💾 Guardar Cambios</button>
+            <button class="btn styled-btn secondary" @onclick="CancelarEdicion">Cancelar</button>
+        </div>
+    </div>
+}
+
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
@@ -236,6 +274,7 @@ else if (citaEliminar != null)
     private List<CitaDTO> citas;
     private CitaDTO citaDetalle;
     private CitaDTO citaEliminar;
+    private CitaDTO citaEditar;
     private string mensaje;
 
     private int? buscarId;
@@ -249,12 +288,7 @@ else if (citaEliminar != null)
 
     protected override async Task OnInitializedAsync()
     {
-        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-        if (string.IsNullOrEmpty(token))
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
+       
         await CargarCitasAsync();
     }
 
@@ -262,10 +296,7 @@ else if (citaEliminar != null)
     {
         try
         {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+           
             citas = await Http.GetFromJsonAsync<List<CitaDTO>>("https://gestionsalyapi.onrender.com/citas");
             paginaActual = 1;
         }
@@ -285,10 +316,7 @@ else if (citaEliminar != null)
 
         try
         {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+           
             var cita = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{buscarId}");
             if (cita != null)
             {
@@ -316,15 +344,11 @@ else if (citaEliminar != null)
     }
 
     private void IrACrearCita() => Navigation.NavigateTo("/cita/crear");
-    private void EditarCita(int id) => Navigation.NavigateTo($"/cita/editar/{id}");
 
     private async Task VerCita(int id)
     {
         try
         {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             citaDetalle = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
             tituloSeccion = "Detalle de la Cita";
@@ -333,6 +357,68 @@ else if (citaEliminar != null)
         {
             mensaje = $"🚨 Error al obtener la cita: {ex.Message}";
         }
+    }
+
+private async Task CargarFormularioEdicion(int id)
+{
+    mensaje = string.Empty; // ✅ limpiar mensajes anteriores
+
+    try
+    {
+        citaEditar = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+        tituloSeccion = "Editar Cita";
+    }
+    catch (Exception ex)
+    {
+        mensaje = $"🚨 Error al cargar la cita para edición: {ex.Message}";
+    }
+}
+
+private async Task GuardarCambios()
+{
+    mensaje = string.Empty; // Limpiar mensajes anteriores
+
+    try
+    {
+        // Enviar los datos en el formato exacto que espera la API
+        var dtoParaEnviar = new
+        {
+            nombre_cliente = citaEditar.NombreCliente,
+            telefono_cliente = citaEditar.TelefonoCliente,
+            fecha_hora = citaEditar.FechaHora.ToString("yyyy-MM-dd HH:mm:ss"), // ✅ Formato correcto
+            nombre_trabajador = citaEditar.NombreTrabajador,
+            id_servicio = citaEditar.IdServicio
+        };
+
+        var response = await Http.PutAsJsonAsync(
+            $"https://gestionsalyapi.onrender.com/citas/{citaEditar.IdCita}",
+            dtoParaEnviar
+        );
+
+        if (response.IsSuccessStatusCode)
+        {
+            mensaje = "✅ Cita actualizada correctamente.";
+            citaEditar = null;
+            tituloSeccion = "Gestión de Citas";
+            await CargarCitasAsync();
+        }
+        else
+        {
+            mensaje = $"❌ Error al actualizar la cita: {response.ReasonPhrase}";
+        }
+    }
+    catch (Exception ex)
+    {
+        mensaje = $"🚨 Error: {ex.Message}";
+    }
+}
+
+
+
+    private void CancelarEdicion()
+    {
+        citaEditar = null;
+        tituloSeccion = "Gestión de Citas";
     }
 
     private void MostrarConfirmacionEliminar(CitaDTO cita)
