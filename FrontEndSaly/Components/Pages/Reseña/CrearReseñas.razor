@@ -140,6 +140,22 @@
     private ResennaDTO resennaNueva = new();
     private string mensaje;
 
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Si no hay token, redirige al login
+            Navigation.NavigateTo("/", true);
+            return;
+        }
+
+        // Si hay token, lo agregamos a los headers
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    }
+
+
     private async Task CrearResennaAsync()
     {
         try
