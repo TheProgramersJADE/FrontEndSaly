@@ -20,8 +20,6 @@
             <button class="btn styled-btn secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
         </div>
 
-        <button class="btn styled-btn primary mb-3" @onclick="IrACrearCita">Crear Nueva Cita</button>
-
         @if (citas == null)
         {
             <p class="mensaje">Cargando citas...</p>
@@ -382,8 +380,6 @@ private async Task CargarServiciosAsync()
         mensaje = string.Empty;
         await CargarCitasAsync();
     }
-
-    private void IrACrearCita() => Navigation.NavigateTo("/cita/crear");
 
     private async Task VerCita(int id)
     {

@@ -56,13 +56,7 @@
                             <td>@usuario.Id</td>
                             <td>@usuario.Username</td>
                             <td>@usuario.Email</td>
-                            <td>
-                                @(
-                                    usuario.Role_Id == 3 ? "Administrador" :
-                                    usuario.Role_Id == 2 ? "Trabajador" :
-                                    usuario.Role_Id == 1 ? "Cliente" : "Desconocido"
-                                )
-                            </td>
+                            <td>@usuario.RolNombre</td>
                             <td>
                                 <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
                                 <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
@@ -385,6 +379,17 @@ else if (usuarioEliminar != null)
 
         [JsonPropertyName("role_id")]
         public int Role_Id { get; set; }
+
+        // Esto capturará el nombre de rol cuando venga como texto
+        [JsonPropertyName("role")]
+        public string Role { get; set; }
+
+         // 📌 Propiedad calculada para usar en la vista
+    public string RolNombre =>
+        !string.IsNullOrEmpty(Role) ? Role :
+        Role_Id == 3 ? "ADMINISTRADOR" :
+        Role_Id == 2 ? "TRABAJADOR" :
+        Role_Id == 1 ? "CLIENTE" : "DESCONOCIDO";
     }
 }
 
