@@ -54,7 +54,7 @@
                                 <td>@cita.TelefonoCliente</td>
                                 <td>@cita.FechaHora.ToString("yyyy-MM-dd HH:mm")</td>
                                 <td>@cita.NombreTrabajador</td>
-                                <td>@cita.IdServicio</td>
+                                <td>@cita.NombreServicio</td>
                                 <td>
                                     <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerCita(cita.IdCita))">Ver</button>
                                     <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() =>CargarFormularioEdicion(cita.IdCita))">Editar</button>
@@ -85,7 +85,7 @@ else if (citaDetalle != null && citaEliminar == null)
             <p><strong>Teléfono:</strong> @citaDetalle.TelefonoCliente</p>
             <p><strong>Fecha:</strong> @citaDetalle.FechaHora.ToString("yyyy-MM-dd HH:mm")</p>
             <p><strong>Trabajador:</strong> @citaDetalle.NombreTrabajador</p>
-            <p><strong>ID Servicio:</strong> @citaDetalle.IdServicio</p>
+<p><strong>Servicio:</strong> @citaDetalle.NombreServicio</p>
         </div>
         <button class="btn styled-btn secondary" @onclick="Regresar">Regresar</button>
     </div>
@@ -98,6 +98,11 @@ else if (citaEliminar != null)
 
         <p><strong>ID:</strong> @citaEliminar.IdCita</p>
         <p><strong>Cliente:</strong> @citaEliminar.NombreCliente</p>
+            <p><strong>Teléfono:</strong> @citaEliminar.TelefonoCliente</p>
+            <p><strong>Fecha:</strong> @citaEliminar.FechaHora.ToString("yyyy-MM-dd HH:mm")</p>
+            <p><strong>Trabajador:</strong> @citaEliminar.NombreTrabajador</p>
+        <p><strong>Servicio:</strong> @citaEliminar.NombreServicio</p>
+
 
         <div class="d-flex mt-3">
             <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminar">Eliminar</button>
@@ -116,6 +121,18 @@ else if (citaEditar != null)
             <input class="form-control styled-input" @bind="citaEditar.NombreCliente" />
         </div>
 
+
+        <div class="mb-3">
+            <label><strong>Servicio:</strong></label>
+            <select class="form-select styled-input" @bind="citaEditar.IdServicio">
+                <option value="">-- Seleccione un servicio --</option>
+                @foreach (var servicio in servicios)
+                {
+                    <option value="@servicio.Id">@servicio.Nombre_Servicio</option>
+                }
+            </select>
+        </div>
+
         <div class="mb-3">
             <label><strong>Teléfono del Cliente:</strong></label>
             <input class="form-control styled-input" @bind="citaEditar.TelefonoCliente" />
@@ -131,10 +148,10 @@ else if (citaEditar != null)
             <input class="form-control styled-input" @bind="citaEditar.NombreTrabajador" />
         </div>
 
-        <div class="mb-3">
+      @*   <div class="mb-3">
             <label><strong>ID del Servicio:</strong></label>
             <input type="number" class="form-control styled-input" @bind="citaEditar.IdServicio" />
-        </div>
+        </div> *@
 
         <div class="d-flex mt-3">
             <button class="btn styled-btn primary me-2" @onclick="GuardarCambios">💾 Guardar Cambios</button>
@@ -276,6 +293,8 @@ else if (citaEditar != null)
     private CitaDTO citaEliminar;
     private CitaDTO citaEditar;
     private string mensaje;
+    private List<ServicioDTO> servicios = new();
+
 
     private int? buscarId;
 
@@ -288,9 +307,23 @@ else if (citaEditar != null)
 
     protected override async Task OnInitializedAsync()
     {
-       
+    await CargarServiciosAsync();  
         await CargarCitasAsync();
     }
+
+
+
+private async Task CargarServiciosAsync()
+{
+    try
+    {
+        servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+    }
+    catch (Exception ex)
+    {
+        mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+    }
+}
 
     private async Task CargarCitasAsync()
     {
@@ -299,6 +332,13 @@ else if (citaEditar != null)
            
             citas = await Http.GetFromJsonAsync<List<CitaDTO>>("https://gestionsalyapi.onrender.com/citas");
             paginaActual = 1;
+
+             // Asignar el nombre del servicio a cada cita
+        foreach (var cita in citas)
+        {
+            var servicio = servicios.FirstOrDefault(s => s.Id == cita.IdServicio);
+            cita.NombreServicio = servicio != null ? servicio.Nombre_Servicio : "Desconocido";
+        }
         }
         catch (Exception ex)
         {
@@ -351,6 +391,10 @@ else if (citaEditar != null)
         {
 
             citaDetalle = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+             // 🔹 Asignar el nombre del servicio
+        var servicio = servicios.FirstOrDefault(s => s.Id == citaDetalle.IdServicio);
+        citaDetalle.NombreServicio = servicio != null ? servicio.Nombre_Servicio : "Desconocido";
+
             tituloSeccion = "Detalle de la Cita";
         }
         catch (Exception ex)
@@ -383,9 +427,11 @@ private async Task GuardarCambios()
         // Enviar los datos en el formato exacto que espera la API
         var dtoParaEnviar = new
         {
+            id_cliente = citaEditar.IdCliente,
             nombre_cliente = citaEditar.NombreCliente,
             telefono_cliente = citaEditar.TelefonoCliente,
             fecha_hora = citaEditar.FechaHora.ToString("yyyy-MM-dd HH:mm:ss"), // ✅ Formato correcto
+            id_trabajador = citaEditar.IdTrabajador,
             nombre_trabajador = citaEditar.NombreTrabajador,
             id_servicio = citaEditar.IdServicio
         };
@@ -424,6 +470,10 @@ private async Task GuardarCambios()
     private void MostrarConfirmacionEliminar(CitaDTO cita)
     {
         citaEliminar = cita;
+         // 🔹 Asignar el nombre del servicio
+    var servicio = servicios.FirstOrDefault(s => s.Id == citaEliminar.IdServicio);
+    citaEliminar.NombreServicio = servicio != null ? servicio.Nombre_Servicio : "Desconocido";
+
         tituloSeccion = "Eliminar Cita";
     }
 
@@ -480,6 +530,9 @@ private async Task GuardarCambios()
         [JsonPropertyName("id_cita")]
         public int IdCita { get; set; }
 
+          [JsonPropertyName("id_cliente")]
+    public int IdCliente { get; set; }
+
         [JsonPropertyName("nombre_cliente")]
         public string NombreCliente { get; set; }
 
@@ -489,11 +542,35 @@ private async Task GuardarCambios()
         [JsonPropertyName("fecha_hora")]
         public DateTime FechaHora { get; set; }
 
+          [JsonPropertyName("id_trabajador")]
+    public int IdTrabajador { get; set; }  
+
         [JsonPropertyName("nombre_trabajador")]
         public string NombreTrabajador { get; set; }
 
         [JsonPropertyName("id_servicio")]
         public int IdServicio { get; set; }
+
+        // 🔹 Nueva propiedad para el nombre del servicio
+    public string NombreServicio { get; set; } = string.Empty;
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
     }
 }
 
