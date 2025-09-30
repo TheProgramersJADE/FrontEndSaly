@@ -1,0 +1,170 @@
+﻿@page "/Servicio/serviciocliente"
+@using System.Text.Json.Serialization
+
+<PageTitle>Servicios</PageTitle>
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3 class="form-title">Nuestros Servicios</h3>
+
+@if (servicios == null)
+{
+    <p class="mensaje">Cargando servicios...</p>
+}
+else if (!servicios.Any())
+{
+    <p class="mensaje">No hay servicios disponibles por el momento.</p>
+}
+else
+{
+    <div class="card-container">
+        @foreach (var servicio in servicios)
+        {
+            <div class="styled-card">
+                <h4>@servicio.Nombre_Servicio</h4>
+                <p>@servicio.Descripcion</p>
+                <p><strong>Duración:</strong> @servicio.Duracion min</p>
+                <p><strong>Precio:</strong> $@servicio.Precio</p>
+                <button class="styled-btn primary" @onclick="() => AgendarCita(servicio.Id)">Agendar Cita</button>
+            </div>
+        }
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <p class="mensaje">@mensaje</p>
+}
+
+<style>
+    .form-title {
+        font-family: 'Lilita One', cursive;
+        font-size: 2rem;
+        color: #111;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .card-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        justify-content: center;
+    }
+
+    .styled-card {
+        background-color: #f7e6fa;
+        border-radius: 16px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        padding: 1.5rem;
+        width: 250px;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .styled-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+
+        .styled-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+            color: #6f2c6f;
+        }
+
+        .styled-card p {
+            margin: 0.3rem 0;
+            color: #111;
+        }
+
+    .styled-btn {
+        border-radius: 12px;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+
+        .styled-btn.primary {
+            background-color: #a569bd;
+            border: none;
+            color: #fff;
+        }
+
+            .styled-btn.primary:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+            }
+
+    .mensaje {
+        text-align: center;
+        font-weight: bold;
+        color: #6f2c6f;
+        margin-top: 1rem;
+    }
+</style>
+
+@code {
+    private List<ServicioDTO> servicios;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await CargarServiciosAsync();
+    }
+
+    private async Task CargarServiciosAsync()
+    {
+        try
+        {
+            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
+            );
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+        }
+    }
+
+    private void AgendarCita(int servicioId)
+    {
+        // Puedes pasar el ID como parámetro si quieres prellenar el formulario de cita
+        Navigation.NavigateTo("/cita/crear");
+    }
+
+    public class ServicioDTO
+    {
+        [JsonPropertyName("id_servicio")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("nombre_servicio")]
+        public string Nombre_Servicio { get; set; }
+
+        [JsonPropertyName("descripcion")]
+        public string Descripcion { get; set; }
+
+        [JsonPropertyName("duracion")]
+        public int Duracion { get; set; }
+
+        [JsonPropertyName("precio")]
+        public string Precio { get; set; }
+    }
+}
+
