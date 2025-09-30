@@ -8,15 +8,6 @@
 
 <h3 class="form-title">Crear Nueva Cita</h3>
 
-@if (!logueado)
-{
-    <div class="login-form text-center">
-        <p class="mensaje">⚠️ Debes iniciar sesión como cliente para crear una cita.</p>
-        <button class="btn styled-btn secondary" @onclick="IrALogin">Ir a Login</button>
-    </div>
-}
-else
-{
     <div class="login-form">
         <div class="mb-3">
             <label><strong>Nombre del Cliente:</strong></label>
@@ -59,7 +50,7 @@ else
             <p class="mensaje">@mensaje</p>
         }
     </div>
-}
+
 
 <style>
     .form-title {
@@ -153,11 +144,12 @@ else
         var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
         if (string.IsNullOrEmpty(token))
         {
-            logueado = false;
+            // Si no hay token, redirige al login
+            Navigation.NavigateTo("/", true);
             return;
         }
 
-        logueado = true;
+        // Si hay token, lo agregamos a los headers
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 

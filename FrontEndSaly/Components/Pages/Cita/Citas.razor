@@ -305,6 +305,20 @@ else if (citaEditar != null)
 
     protected override async Task OnInitializedAsync()
     {
+          // ✅ Verificar si hay token en sessionStorage
+    var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+    if (string.IsNullOrEmpty(token))
+    {
+        // Si no hay token, redirige inmediatamente al login
+        Navigation.NavigateTo("/", true);
+        return;
+    }
+
+    // ✅ Configurar token en el header (aunque la API no lo requiera)
+    Http.DefaultRequestHeaders.Authorization =
+        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+
     await CargarServiciosAsync();  
         await CargarCitasAsync();
     }
