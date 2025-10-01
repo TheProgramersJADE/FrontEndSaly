@@ -1,8 +1,10 @@
 ﻿@page "/"
-
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+
+@using FrontEndSaly.Components.Layout
+@layout EmptyLayout
 
 <div class="login-container">
     <!-- Logo arriba -->
@@ -194,7 +196,7 @@
 
     private void IrARegistro()
     {
-        Navigation.NavigateTo("/crearusuario");
+        Navigation.NavigateTo("/crearusuario/login");
     }
 
     public class LoginRequest

@@ -1,12 +1,13 @@
-﻿
-@using System.Text.Json.Serialization;
+﻿@using System.Text.Json.Serialization;
+@using FrontEndSaly.Components.Layout;
 
-@page "/crearusuario"
+@page "/crearusuario/login"
+@layout EmptyLayout
 
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<h3 class="form-title"> Crear Usuario</h3>
+<h3 class="form-title">Registrarse</h3>
 
 <EditForm Model="nuevoUsuario" OnValidSubmit="CrearUsuarioAsync" class="login-form">
     <DataAnnotationsValidator />
@@ -137,12 +138,10 @@
     private UsuarioRequest nuevoUsuario = new UsuarioRequest();
     private string mensaje;
 
-    
 
     private void VolverAUsuarios()
     {
-            Navigation.NavigateTo("/counter");
-       
+            Navigation.NavigateTo("/");
     }
 
     private async Task CrearUsuarioAsync()
@@ -156,8 +155,7 @@
                 mensaje = "✅ Usuario creado con éxito.";
                 nuevoUsuario = new UsuarioRequest();
 
-                    Navigation.NavigateTo("/counter");
-
+                    Navigation.NavigateTo("/");
             }
             else
             {
@@ -186,4 +184,3 @@
         public int Role_Id { get; set; } = 1;
     }
 }
- 

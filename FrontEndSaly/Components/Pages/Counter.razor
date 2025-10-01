@@ -291,7 +291,7 @@ else if (usuarioEliminar != null)
     await CargarUsuariosAsync();
     paginaActual = 1;
 }
-    private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario/gestion");
+    private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario");
     private void EditarUsuario(int id) => Navigation.NavigateTo($"/usuarios/editar/{id}");
 
     private async Task VerUsuario(int id)
