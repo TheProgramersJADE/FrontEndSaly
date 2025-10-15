@@ -77,7 +77,7 @@ else if (crearNuevo)
     <div class="login-form styled-card">
         <h4>Crear Nuevo Registro</h4>
         <p>Servicio:</p>
-        <select class="form-select styled-input mb-3" @bind="nuevoRegistro.Id_Servicio">
+        <select id="selectServicio" class="form-select styled-input mb-3" @bind="nuevoRegistro.Id_Servicio">
             <option value="">-- Selecciona un servicio --</option>
             @foreach (var s in listaServicios)
             {
@@ -101,7 +101,7 @@ else if (crearNuevo)
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
-    <p class="mensaje">@mensaje</p>
+    <p id="mensajeExito" class="mensaje">@mensaje</p>
 }
 
 <style>
