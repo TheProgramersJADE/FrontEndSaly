@@ -13,8 +13,8 @@
 {
     <div class="login-form">
         <div class="mb-3 d-flex flex-wrap align-items-center">
-            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID" @bind="filtroId" />
-            <button class="btn styled-btn primary mb-2 me-2" @onclick="AplicarFiltro">Buscar</button>
+            <input type="number" id="InputBuscar" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID" @bind="filtroId" />
+            <button id="btnBuscar" class="btn styled-btn primary mb-2 me-2" @onclick="AplicarFiltro">Buscar</button>
             <button class="btn styled-btn secondary mb-2" @onclick="LimpiarFiltro">Limpiar</button>
         </div>
 
@@ -52,9 +52,9 @@
                                 <td>@r.Comentario</td>
                                 <td>@r.Fecha?.ToString("yyyy-MM-dd")</td>
                                 <td>
-                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalle(r.Id))">Ver</button>
-                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarResenna(r.Id))">Editar</button>
-                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(r))">Eliminar</button>
+                                    <button id="btnVer" class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalle(r.Id))">Ver</button>
+                                    <button id="btnEditar" class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarResenna(r.Id))">Editar</button>
+                                    <button id="btnEliminar" class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(r))">Eliminar</button>
                                 </td>
                             </tr>
                         }
@@ -94,7 +94,7 @@ else if (resennaEliminar != null)
         <p><strong>Comentario:</strong> @resennaEliminar.Comentario</p>
 
         <div class="d-flex mt-3">
-            <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
+            <button id="btnEliminarConfirmar" class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
             <button class="btn styled-btn secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
         </div>
     </div>
@@ -106,22 +106,22 @@ else if (resennaEditar != null)
 
         <div class="mb-3">
             <label class="form-label">Cliente</label>
-            <input class="form-control styled-input" @bind="resennaEditar.Nombre_Cliente" />
+            <input id="InputNombreEdit" class="form-control styled-input" @bind="resennaEditar.Nombre_Cliente" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Trabajador</label>
-            <input class="form-control styled-input" @bind="resennaEditar.Nombre_Trabajador" />
+            <input id="InputTrabajadorEdit" class="form-control styled-input" @bind="resennaEditar.Nombre_Trabajador" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Calificación</label>
-            <input type="number" class="form-control styled-input" @bind="resennaEditar.Calificacion" min="1" max="5" />
+            <input id="InputCalificacionEdit" type="number" class="form-control styled-input" @bind="resennaEditar.Calificacion" min="1" max="5" />
         </div>
 
         <div class="mb-3">
             <label class="form-label">Comentario</label>
-            <textarea class="form-control styled-input" @bind="resennaEditar.Comentario"></textarea>
+            <textarea id="InputComentarioEdit" class="form-control styled-input" @bind="resennaEditar.Comentario"></textarea>
         </div>
 
         <div class="mb-3">
@@ -130,7 +130,7 @@ else if (resennaEditar != null)
         </div>
 
         <div class="d-flex">
-            <button class="btn styled-btn primary me-2" @onclick="GuardarEdicion">Guardar</button>
+            <button id="btnGuardarEdit" class="btn styled-btn primary me-2" @onclick="GuardarEdicion">Guardar</button>
             <button class="btn styled-btn secondary" @onclick="CancelarEditar">Cancelar</button>
         </div>
     </div>
