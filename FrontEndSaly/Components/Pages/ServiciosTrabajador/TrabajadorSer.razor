@@ -10,12 +10,12 @@
 {
     <div class="login-form">
         <div class="mb-3 d-flex flex-wrap align-items-center">
-            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
-            <button class="btn styled-btn primary mb-2 me-2" @onclick="BuscarPorIdAsync">Buscar</button>
-            <button class="btn styled-btn secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
+            <input id="inputBuscar" type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
+            <button id="bntBuscar" class="btn styled-btn primary mb-2 me-2" @onclick="BuscarPorIdAsync">Buscar</button>
+            <button id="btnLimpiar" class="btn styled-btn secondary mb-2" @onclick="LimpiarBusqueda">Limpiar</button>
         </div>
 
-        <button class="btn styled-btn primary mb-3" @onclick="MostrarFormularioCrear">Crear Nuevo</button>
+        <button id="btnCrearAsignacion" class="btn styled-btn primary mb-3" @onclick="MostrarFormularioCrear">Crear Nuevo</button>
 
         @if (registros == null)
         {
@@ -77,8 +77,8 @@ else if (crearNuevo)
     <div class="login-form styled-card">
         <h4>Crear Nuevo Registro</h4>
         <p>Servicio:</p>
-        <select class="form-select styled-input mb-3" @bind="nuevoRegistro.Id_Servicio">
-            <option value="">-- Selecciona un servicio --</option>
+        <select id="btnCombobox" class="form-select styled-input mb-3" @bind="nuevoRegistro.Id_Servicio">
+            <option id="btnOpcion" value="">-- Selecciona un servicio --</option>
             @foreach (var s in listaServicios)
             {
                 <option value="@s.Id">@s.Nombre_Servicio</option>
@@ -93,7 +93,7 @@ else if (crearNuevo)
         else
         {
             <p>❌ Los administradores no pueden crear asignaciones</p>
-            <button class="btn styled-btn primary" disabled>Guardar</button>
+            <button id="btnGuardarAsignacion" class="btn styled-btn primary" disabled>Guardar</button>
         }
         <button class="btn styled-btn secondary" @onclick="CancelarCrear">Cancelar</button>
     </div>
