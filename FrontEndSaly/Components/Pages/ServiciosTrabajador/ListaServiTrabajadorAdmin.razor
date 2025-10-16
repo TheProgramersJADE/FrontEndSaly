@@ -13,8 +13,8 @@
     <div class="login-form">
         <!-- 🔍 Filtro por ID -->
         <div class="mb-3 d-flex flex-wrap align-items-center">
-            <input type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
-            <button class="btn styled-btn primary mb-2 me-2" @onclick="FiltrarPorId">🔍 Buscar</button>
+            <input id="inputBuscarAsingId" type="number" class="form-control styled-input me-2 mb-2 flex-grow-1" placeholder="Buscar por ID..." @bind="filtroId" />
+            <button id="btnBuscarAsingId" class="btn styled-btn primary mb-2 me-2" @onclick="FiltrarPorId">🔍 Buscar</button>
             <button class="btn styled-btn secondary mb-2" @onclick="LimpiarFiltro">↩ Limpiar</button>
         </div>
 
@@ -47,9 +47,9 @@
                                 <td>@GetNombreServicio(s.IdServicio)</td>
                                 <td>@s.IdTrabajador</td>
                                 <td>
-                                    <button class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">Ver</button>
-                                    <button class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))"> Editar</button>
-                                    <button class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarEliminar(s))"> Eliminar</button>
+                                    <button id="btnVerAsign" class="btn styled-btn info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">Ver</button>
+                                    <button id="btnEditarAsign" class="btn styled-btn warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))"> Editar</button>
+                                    <button id="btnEliminarAsign" class="btn styled-btn danger btn-sm" @onclick="@(() => MostrarEliminar(s))"> Eliminar</button>
                                 </td>
                             </tr>
                         }
@@ -85,7 +85,7 @@ else if (editar != null)
 
             <div class="mb-3">
                 <label>Servicio</label>
-                <select class="form-select styled-input" @bind="editar.IdServicio">
+                <select id="selectServicio" class="form-select styled-input" @bind="editar.IdServicio">
                     @foreach (var s in serviciosDisponibles)
                     {
                         <option value="@s.Id">@s.Nombre_Servicio</option>
@@ -98,7 +98,7 @@ else if (editar != null)
                 <input type="number" class="form-control styled-input" @bind="editar.IdTrabajador" />
             </div>
 
-            <button class="btn styled-btn primary me-2" @onclick="ActualizarAsync">💾 Guardar Cambios</button>
+            <button id="btnActualizarAsign" class="btn styled-btn primary me-2" @onclick="ActualizarAsync">💾 Guardar Cambios</button>
             <button class="btn styled-btn secondary" @onclick="Regresar">Cancelar</button>
         </div>
     </div>
@@ -115,7 +115,7 @@ else if (eliminar != null)
         <p><strong>ID Trabajador:</strong> @eliminar.IdTrabajador</p>
 
         <div class="d-flex mt-3">
-            <button class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminarAsync">✅ Eliminar</button>
+            <button id="btneliminarAsignacion" class="btn styled-btn danger btn-sm me-2" @onclick="ConfirmarEliminarAsync">✅ Eliminar</button>
             <button class="btn styled-btn secondary btn-sm" @onclick="Regresar">Cancelar</button>
         </div>
     </div>
