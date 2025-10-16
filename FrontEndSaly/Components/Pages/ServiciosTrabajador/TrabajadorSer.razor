@@ -88,12 +88,12 @@ else if (crearNuevo)
         @if (!esAdmin)
         {
             <p>Trabajador: <strong>@username</strong></p>
-            <button class="btn styled-btn primary me-2" @onclick="CrearRegistro">Guardar</button>
+            <button id="btnGuardarAsignacion" class="btn styled-btn primary me-2" @onclick="CrearRegistro">Guardar</button>
         }
         else
         {
             <p>❌ Los administradores no pueden crear asignaciones</p>
-            <button id="btnGuardarAsignacion" class="btn styled-btn primary" disabled>Guardar</button>
+            <button id="btnGuardarAsignacion2" class="btn styled-btn primary" disabled>Guardar</button>
         }
         <button class="btn styled-btn secondary" @onclick="CancelarCrear">Cancelar</button>
     </div>
