@@ -39,6 +39,15 @@
         }
         else
         {
+            <select class="form-select form-select-sm styled-input me-2 mb-2" style="width: 200px;" @onchange="CambiarTamanoPagina">
+                <option value="5">5 por página</option>
+                <option value="10">10 por página</option>
+                <option value="20">20 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+                <option value="1000">Todos</option>
+            </select>
+
             <table class="table table-striped styled-table">
                 <thead>
                     <tr>
@@ -50,7 +59,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var usuario in usuarios.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
+                    @foreach (var usuario in usuarios)
                     {
                         <tr>
                             <td>@usuario.Id</td>
@@ -227,8 +236,8 @@ else if (usuarioEliminar != null)
 
     // 📌 Paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 5;
-    private int totalPaginas => (int)Math.Ceiling((double)(usuarios?.Count() ?? 0) / tamanoPagina);
+    private int tamanoPagina = 10;
+    private int totalPaginas = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -250,9 +259,14 @@ else if (usuarioEliminar != null)
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
-                "https://usersaly-api-node-js.onrender.com/usuarioslist"
-            );
+            // 🔹 Llamamos al endpoint con los parámetros de paginación reales
+            var respuesta = await Http.GetFromJsonAsync<RespuestaUsuariosPaginados>(
+     $"https://usersaly-api-node-js.onrender.com/usuarioslist?page={paginaActual}&limit={tamanoPagina}"
+ );
+
+            // 🔹 Cargamos la lista y el total de páginas desde el backend
+            usuarios = respuesta?.Data ?? new List<UsuarioDTO>();
+            totalPaginas = respuesta?.TotalPages ?? 1;
         }
         catch (Exception ex)
         {
@@ -356,14 +370,32 @@ else if (usuarioEliminar != null)
     }
 
     // 📌 Métodos de paginación
-    private void PaginaAnterior()
+    private async Task PaginaAnterior()
     {
-        if (paginaActual > 1) paginaActual--;
+        if (paginaActual > 1)
+        {
+            paginaActual--;
+            await CargarUsuariosAsync();
+        }
     }
 
-    private void PaginaSiguiente()
+    private async Task PaginaSiguiente()
     {
-        if (paginaActual < totalPaginas) paginaActual++;
+        if (paginaActual < totalPaginas)
+        {
+            paginaActual++;
+            await CargarUsuariosAsync();
+        }
+    }
+
+    private async Task CambiarTamanoPagina(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
+        {
+            tamanoPagina = nuevoTamano;
+            paginaActual = 1;
+            await CargarUsuariosAsync();
+        }
     }
 
     public class UsuarioDTO
@@ -391,276 +423,26 @@ else if (usuarioEliminar != null)
         Role_Id == 2 ? "TRABAJADOR" :
         Role_Id == 1 ? "CLIENTE" : "DESCONOCIDO";
     }
+
+    public class RespuestaUsuariosPaginados
+    {
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<UsuarioDTO> Data { get; set; }
+    }
+
 }
 
 
 
-
-
-@* @page "/counter"
-@using System.Text.Json.Serialization
-
-<PageTitle>Usuarios</PageTitle>
-
-@inject HttpClient Http
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
-
-<h3>Gestión de Usuarios</h3>
-
-@if (usuarioDetalle == null && usuarioEliminar == null)
-{
-    <!-- Tabla y búsqueda de usuarios -->
-    <div class="mb-3 d-flex align-items-center">
-        <input type="text" class="form-control me-2" placeholder="Buscar por email..." @bind="filtroEmail" />
-
-        <select class="form-select me-2" @bind="filtroRoleId">
-            <option value="">Todos los roles</option>
-            <option value="1">Administrador</option>
-            <option value="2">Usuario</option>
-        </select>
-
-        <button class="btn btn-secondary" @onclick="BuscarUsuariosAsync">Buscar</button>
-    </div>
-
-    <button class="btn btn-primary mb-3" @onclick="IrACrearUsuario">Crear Usuario</button>
-
-    @if (usuarios == null)
-    {
-        <p>Cargando usuarios...</p>
-    }
-    else if (!usuarios.Any())
-    {
-        <p>No hay usuarios registrados.</p>
-    }
-    else
-    {
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var usuario in usuarios)
-                {
-                    <tr>
-                        <td>@usuario.Id</td>
-                        <td>@usuario.Username</td>
-                        <td>@usuario.Email</td>
-                        <td>
-                            @(
-                              usuario.Role_Id == 3 ? "Administrador" :
-                              usuario.Role_Id == 2 ? "Trabajador" :
-                              usuario.Role_Id == 1 ? "Cliente" : "Desconocido"
-                              )
-                        </td>
-                    <td>
-                            <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerUsuario(usuario.Id))">Ver</button>
-                            <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarUsuario(usuario.Id))">Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarConfirmacionEliminar(usuario))">Eliminar</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-}
-else if (usuarioDetalle != null && usuarioEliminar == null)
-{
-    <!-- Panel de detalle de usuario -->
-    <div class="card p-3 mb-3">
-        <p><strong>ID:</strong> @usuarioDetalle.Id</p>
-        <p><strong>Username:</strong> @usuarioDetalle.Username</p>
-        <p><strong>Email:</strong> @usuarioDetalle.Email</p>
-        <p><strong>Rol:</strong> 
-            @(
-            usuarioDetalle.Role_Id == 3 ? "Administrador" :
-            usuarioDetalle.Role_Id == 2 ? "Trabajador" :
-            usuarioDetalle.Role_Id == 1 ? "Cliente" : "Desconocido"
-             )
-        </p>
-    </div>
-
-    <button class="btn btn-primary" @onclick="Regresar">Regresar</button>
-}
-else if (usuarioEliminar != null)
-{
-    <!-- Panel de confirmación de eliminación -->
-    <div class="card p-3 mb-3 border-danger">
-        <div class="alert alert-warning mb-3" role="alert">
-            ⚠️ ¿Estás seguro que deseas eliminar este usuario?
-        </div>
-
-        <p><strong>ID:</strong> @usuarioEliminar.Id</p>
-        <p><strong>Username:</strong> @usuarioEliminar.Username</p>
-        <p><strong>Email:</strong> @usuarioEliminar.Email</p>
-        <p>
-            <strong>Rol:</strong> @(
-            usuarioEliminar.Role_Id == 3 ? "Administrador" :
-            usuarioEliminar.Role_Id == 2 ? "Trabajador" :
-            usuarioEliminar.Role_Id == 1 ? "Cliente" : "Desconocido"
-                )
-        </p>
-
-        <div class="d-flex mt-3">
-            <button class="btn btn-danger btn-sm me-2" @onclick="ConfirmarEliminar">ELIMINAR</button>
-            <button class="btn btn-secondary btn-sm" @onclick="CancelarEliminar">CANCELAR</button>
-        </div>
-    </div>
-
-}
-
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <p>@mensaje</p>
-}
-
-@code {
-    private List<UsuarioDTO> usuarios;
-    private string mensaje;
-    private string filtroEmail = string.Empty;
-    private string filtroRoleId = string.Empty;
-
-    private UsuarioDTO usuarioDetalle = null;
-    private UsuarioDTO usuarioEliminar = null;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-        if (string.IsNullOrEmpty(token))
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
-
-        await CargarUsuariosAsync();
-    }
-
-    private async Task CargarUsuariosAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
-                "https://usersaly-api-node-js.onrender.com/usuarioslist"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al cargar usuarios: {ex.Message}";
-        }
-    }
-
-    private async Task BuscarUsuariosAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var query = new List<string>();
-            if (!string.IsNullOrWhiteSpace(filtroEmail)) query.Add($"email={filtroEmail}");
-            if (!string.IsNullOrWhiteSpace(filtroRoleId)) query.Add($"role_id={filtroRoleId}");
-            var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
-
-            usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
-                $"https://usersaly-api-node-js.onrender.com/usuarioslist/buscar{queryString}"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al buscar usuarios: {ex.Message}";
-        }
-    }
-
-    private void IrACrearUsuario() => Navigation.NavigateTo("/crearusuario/gestion");
-    private void EditarUsuario(int id) => Navigation.NavigateTo($"/usuarios/editar/{id}");
-
-    // **Ver usuario usando el endpoint GET /usuarioslist/:id**
-    private async Task VerUsuario(int id)
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            usuarioDetalle = await Http.GetFromJsonAsync<UsuarioDTO>(
-                $"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al obtener detalle del usuario: {ex.Message}";
-        }
-    }
-
-    private void Regresar()
-    {
-        usuarioDetalle = null;
-        usuarioEliminar = null;
-    }
-
-    // **NUEVO: Eliminar con confirmación**
-    private void MostrarConfirmacionEliminar(UsuarioDTO usuario)
-    {
-        usuarioEliminar = usuario;
-        usuarioDetalle = usuario; // Muestra info en panel
-    }
-
-    private async Task ConfirmarEliminar()
-    {
-        try
-        {
-            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{usuarioEliminar.Id}");
-            if (response.IsSuccessStatusCode)
-            {
-                mensaje = "✅ Usuario eliminado correctamente.";
-                usuarioEliminar = null;
-                usuarioDetalle = null;
-                await CargarUsuariosAsync();
-                Navigation.NavigateTo("/counter");
-            }
-            else
-            {
-                mensaje = $"❌ Error al eliminar usuario: {response.ReasonPhrase}";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error de conexión: {ex.Message}";
-        }
-    }
-
-    private void CancelarEliminar()
-    {
-        usuarioEliminar = null;
-        usuarioDetalle = null;
-        Navigation.NavigateTo("/counter");
-    }
-
-    public class UsuarioDTO
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
-
-        [JsonPropertyName("username")]
-        public string Username { get; set; }
-
-        [JsonPropertyName("email")]
-        public string Email { get; set; }
-
-        [JsonPropertyName("role_id")]
-        public int Role_Id { get; set; }
-    }
-}
- *@
