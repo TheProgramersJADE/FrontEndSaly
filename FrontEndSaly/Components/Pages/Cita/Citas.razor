@@ -30,18 +30,6 @@
         }
         else
         {
-            <select class="form-select form-select-sm styled-input me-2 mb-2"
-                    style="width: 200px;"
-                    @onchange="CambiarTamanoPagina">
-                <option value="5">5 por página</option>
-                <option value="10">10 por página</option>
-                <option value="20">20 por página</option>
-                <option value="50">50 por página</option>
-                <option value="100">100 por página</option>
-                <option value="5000">Todos</option>
-            </select>
-
-
             <div class="table-responsive">
                 <table class="table styled-table">
                     <thead>
@@ -56,7 +44,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var cita in citas)
+                        @foreach (var cita in citas.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
                         {
                             <tr>
                                 <td>@cita.IdCita</td>
@@ -312,8 +300,8 @@ else if (citaEditar != null)
 
     // 🔹 Paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 10;
-    private int totalPaginas = 1;
+    private int tamanoPagina = 5;
+    private int totalPaginas => (int)Math.Ceiling((double)(citas?.Count ?? 0) / tamanoPagina);
 
     protected override async Task OnInitializedAsync()
     {
@@ -341,8 +329,7 @@ private async Task CargarServiciosAsync()
 {
     try
     {
-            var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>("https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
-            servicios = respuesta?.Data ?? new List<ServicioDTO>();
+            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
     }
     catch (Exception ex)
     {
@@ -355,14 +342,10 @@ private async Task CargarServiciosAsync()
         try
         {
            
-            var respuesta = await Http.GetFromJsonAsync<RespuestaCitasPaginadas>(
-           $"https://1xbfjn6k-8081.use.devtunnels.ms/citas?page={paginaActual}&limit={tamanoPagina}"
-       );
+            citas = await Http.GetFromJsonAsync<List<CitaDTO>>("https://gestionsalyapi.onrender.com/citas");
+            paginaActual = 1;
 
-            citas = respuesta?.Data ?? new List<CitaDTO>();
-            totalPaginas = respuesta?.TotalPages ?? 1;
-
-            // Asignar nombre del servicio a cada cita
+            // Asignar el nombre del servicio a cada cita
             foreach (var cita in citas)
             {
                 var servicio = servicios.FirstOrDefault(s => s.Id == cita.IdServicio);
@@ -541,34 +524,21 @@ private async Task GuardarCambios()
     }
 
     // 🔹 Métodos de paginación
-    private async Task PaginaAnterior()
+    private void PaginaAnterior()
     {
         if (paginaActual > 1)
         {
             paginaActual--;
-            await CargarCitasAsync();
         }
     }
 
-    private async Task PaginaSiguiente()
+    private void PaginaSiguiente()
     {
         if (paginaActual < totalPaginas)
         {
             paginaActual++;
-            await CargarCitasAsync();
         }
     }
-
-    private async Task CambiarTamanoPagina(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
-        {
-            tamanoPagina = nuevoTamano;
-            paginaActual = 1;
-            await CargarCitasAsync();
-        }
-    }
-
 
     public class CitaDTO
     {
@@ -617,42 +587,6 @@ private async Task GuardarCambios()
         [JsonPropertyName("precio")]
         public string Precio { get; set; }
     }
-    public class RespuestaCitasPaginadas
-    {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("limit")]
-        public int Limit { get; set; }
-
-        [JsonPropertyName("total")]
-        public int Total { get; set; }
-
-        [JsonPropertyName("totalPages")]
-        public int TotalPages { get; set; }
-
-        [JsonPropertyName("data")]
-        public List<CitaDTO> Data { get; set; }
-    }
-
-    public class RespuestaServicios
-    {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("limit")]
-        public int Limit { get; set; }
-
-        [JsonPropertyName("total")]
-        public int Total { get; set; }
-
-        [JsonPropertyName("totalPages")]
-        public int TotalPages { get; set; }
-
-        [JsonPropertyName("data")]
-        public List<ServicioDTO> Data { get; set; }
-    }
-
 
 }
 

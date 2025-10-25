@@ -30,15 +30,6 @@
         }
         else
         {
-            <select class="form-select form-select-sm styled-input me-2 mb-2" style="width: 200px;" @onchange="CambiarTamanoPagina">
-                <option value="5">5 por página</option>
-                <option value="10" selected>10 por página</option>
-                <option value="20">20 por página</option>
-                <option value="50">50 por página</option>
-                <option value="100">100 por página</option>
-                <option value="1000">Todos</option>
-            </select>
-
             <div class="table-responsive">
                 <table class="table styled-table">
                     <thead>
@@ -52,7 +43,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var servicio in servicios)
+                        @foreach (var servicio in servicios.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
                         {
                             <tr>
                                 <td>@servicio.Id</td>
@@ -250,8 +241,8 @@ else if (servicioEliminar != null)
 
     // 🔹 Variables de paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 10;
-    private int totalPaginas = 1;
+    private int tamanoPagina = 5; // cantidad de registros por página
+    private int totalPaginas => (int)Math.Ceiling((double)(servicios?.Count ?? 0) / tamanoPagina);
 
     protected override async Task OnInitializedAsync()
     {
@@ -273,13 +264,11 @@ else if (servicioEliminar != null)
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            // ✅ Ahora llamamos al endpoint paginado del backend
-            var respuesta = await Http.GetFromJsonAsync<RespuestaServiciosPaginados>(
-         $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios?page={paginaActual}&limit={tamanoPagina}"
+           servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+                "https://gestionsalyapi.onrender.com/servicios"
             );
 
-            servicios = respuesta?.Data ?? new List<ServicioDTO>();
-            totalPaginas = respuesta?.TotalPages ?? 1;
+            paginaActual = 1; // reiniciar a la primera página al recargar
         }
         catch (Exception ex)
         {
@@ -402,34 +391,17 @@ else if (servicioEliminar != null)
     }
 
     // 🔹 Métodos de paginación
-    private async Task PaginaAnterior()
+    private void PaginaAnterior()
     {
         if (paginaActual > 1)
-        {
             paginaActual--;
-            await CargarServiciosAsync();
-        }
     }
 
-    private async Task PaginaSiguiente()
+    private void PaginaSiguiente()
     {
         if (paginaActual < totalPaginas)
-        {
             paginaActual++;
-            await CargarServiciosAsync();
-        }
     }
-
-    private async Task CambiarTamanoPagina(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
-        {
-            tamanoPagina = nuevoTamano;
-            paginaActual = 1;
-            await CargarServiciosAsync();
-        }
-    }
-
 
     public class ServicioDTO
     {
@@ -447,24 +419,6 @@ else if (servicioEliminar != null)
 
         [JsonPropertyName("precio")]
         public string Precio { get; set; }
-    }
-
-    public class RespuestaServiciosPaginados
-    {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("limit")]
-        public int Limit { get; set; }
-
-        [JsonPropertyName("total")]
-        public int Total { get; set; }
-
-        [JsonPropertyName("totalPages")]
-        public int TotalPages { get; set; }
-
-        [JsonPropertyName("data")]
-        public List<ServicioDTO> Data { get; set; }
     }
 
 }

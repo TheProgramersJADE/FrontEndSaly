@@ -28,15 +28,6 @@
         }
         else
         {
-            <select class="form-select form-select-sm styled-input me-2 mb-2" style="width: 200px;" @onchange="CambiarTamanoPagina">
-                <option value="5">5 por página</option>
-                <option value="10">10 por página</option>
-                <option value="20">20 por página</option>
-                <option value="50">50 por página</option>
-                <option value="100">100 por página</option>
-                <option value="5000">Todos</option>
-            </select>
-
             <div class="table-responsive">
                 <table class="table styled-table">
                     <thead>
@@ -51,7 +42,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var r in resennas)
+                        @foreach (var r in resennasFiltradas.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
                         {
                             <tr>
                                 <td>@r.Id</td>
@@ -72,11 +63,6 @@
             </div>
 
             <!-- Paginación -->
-        @*     <div class="d-flex justify-content-center align-items-center mt-3">
-                <button class="btn styled-btn secondary me-2" @onclick="PaginaAnterior" disabled="@(paginaActual == 1)">Anterior</button>
-                <span><strong>Página @paginaActual de @totalPaginas</strong></span>
-                <button class="btn styled-btn secondary ms-2" @onclick="PaginaSiguiente" disabled="@(paginaActual == totalPaginas)">Siguiente</button>
-            </div> *@
             <div class="d-flex justify-content-center align-items-center mt-3">
                 <button class="btn styled-btn secondary me-2" @onclick="PaginaAnterior" disabled="@(paginaActual == 1)">Anterior</button>
                 <span><strong>Página @paginaActual de @totalPaginas</strong></span>
@@ -288,8 +274,8 @@ else if (resennaEditar != null)
 
     // Paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 10;
-    private int totalPaginas = 1;
+    private int tamanoPagina = 5;
+    private int totalPaginas => (int)Math.Ceiling((double)(resennasFiltradas?.Count ?? 0) / tamanoPagina);
 
 
     protected override async Task OnInitializedAsync()
@@ -312,12 +298,12 @@ else if (resennaEditar != null)
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var respuesta = await Http.GetFromJsonAsync<RespuestaResennasPaginadas>(
-            $"https://1xbfjn6k-8081.use.devtunnels.ms/resennas?page={paginaActual}&limit={tamanoPagina}"
-        );
+            resennas = await Http.GetFromJsonAsync<List<ResennaDTO>>(
+                "https://gestionsalyapi.onrender.com/resennas"
+            );
 
-            resennas = respuesta?.Data ?? new List<ResennaDTO>();
-            totalPaginas = respuesta?.TotalPages ?? 1;
+            resennasFiltradas = resennas;
+            paginaActual = 1;
         }
         catch (Exception ex)
         {
@@ -474,35 +460,15 @@ else if (resennaEditar != null)
     }
 
     // Paginación
-    private async Task PaginaAnterior()
+    private void PaginaAnterior()
     {
-        if (paginaActual > 1)
-        {
-            paginaActual--;
-            await CargarResennasAsync();
-        }
+        if (paginaActual > 1) paginaActual--;
     }
 
-    private async Task PaginaSiguiente()
+    private void PaginaSiguiente()
     {
-        if (paginaActual < totalPaginas)
-        {
-            paginaActual++;
-            await CargarResennasAsync();
-        }
+        if (paginaActual < totalPaginas) paginaActual++;
     }
-
-
-    private async Task CambiarTamanoPagina(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
-        {
-            tamanoPagina = nuevoTamano;
-            paginaActual = 1;
-            await CargarResennasAsync();
-        }
-    }
-
 
     public class ResennaDTO
     {
@@ -523,24 +489,6 @@ else if (resennaEditar != null)
 
         [JsonPropertyName("fecha")]
         public DateTime? Fecha { get; set; }
-    }
-
-    public class RespuestaResennasPaginadas
-    {
-        [JsonPropertyName("page")]
-        public int Page { get; set; }
-
-        [JsonPropertyName("limit")]
-        public int Limit { get; set; }
-
-        [JsonPropertyName("total")]
-        public int Total { get; set; }
-
-        [JsonPropertyName("totalPages")]
-        public int TotalPages { get; set; }
-
-        [JsonPropertyName("data")]
-        public List<ResennaDTO> Data { get; set; }
     }
 
 }
