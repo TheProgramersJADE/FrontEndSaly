@@ -28,6 +28,15 @@
         }
         else
         {
+            <select class="form-select form-select-sm styled-input me-2 mb-2" style="width: 200px;" @onchange="CambiarTamanoPagina">
+                <option value="5">5 por página</option>
+                <option value="10">10 por página</option>
+                <option value="20">20 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+                <option value="5000">Todos</option>
+            </select>
+
             <div class="table-responsive">
                 <table class="table styled-table">
                     <thead>
@@ -42,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var r in resennasFiltradas.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
+                        @foreach (var r in resennas)
                         {
                             <tr>
                                 <td>@r.Id</td>
@@ -274,8 +283,8 @@ else if (resennaEditar != null)
 
     // Paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 5;
-    private int totalPaginas => (int)Math.Ceiling((double)(resennasFiltradas?.Count ?? 0) / tamanoPagina);
+    private int tamanoPagina = 10;
+    private int totalPaginas = 1;
 
 
     protected override async Task OnInitializedAsync()
@@ -298,12 +307,13 @@ else if (resennaEditar != null)
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            resennas = await Http.GetFromJsonAsync<List<ResennaDTO>>(
-                "https://gestionsalyapi.onrender.com/resennas"
-            );
+            var respuesta = await Http.GetFromJsonAsync<RespuestaResennasPaginadas>(
+            $"https://gestionsalyapi.onrender.com/resennas?page={paginaActual}&limit={tamanoPagina}"
+        );
 
-            resennasFiltradas = resennas;
-            paginaActual = 1;
+            resennas = respuesta?.Data ?? new List<ResennaDTO>();
+            totalPaginas = respuesta?.TotalPages ?? 1;
+
         }
         catch (Exception ex)
         {
@@ -460,15 +470,35 @@ else if (resennaEditar != null)
     }
 
     // Paginación
-    private void PaginaAnterior()
+    private async Task PaginaAnterior()
     {
-        if (paginaActual > 1) paginaActual--;
+        if (paginaActual > 1)
+        {
+            paginaActual--;
+            await CargarResennasAsync();
+        }
     }
 
-    private void PaginaSiguiente()
+    private async Task PaginaSiguiente()
     {
-        if (paginaActual < totalPaginas) paginaActual++;
+        if (paginaActual < totalPaginas)
+        {
+            paginaActual++;
+            await CargarResennasAsync();
+        }
     }
+
+
+    private async Task CambiarTamanoPagina(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
+        {
+            tamanoPagina = nuevoTamano;
+            paginaActual = 1;
+            await CargarResennasAsync();
+        }
+    }
+
 
     public class ResennaDTO
     {
@@ -490,6 +520,25 @@ else if (resennaEditar != null)
         [JsonPropertyName("fecha")]
         public DateTime? Fecha { get; set; }
     }
+
+    public class RespuestaResennasPaginadas
+    {
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<ResennaDTO> Data { get; set; }
+    }
+
 
 }
 
