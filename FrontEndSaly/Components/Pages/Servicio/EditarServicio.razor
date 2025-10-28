@@ -139,7 +139,7 @@ else
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             servicio = await Http.GetFromJsonAsync<ServicioDTO>(
-                $"https://gestionsalyapi.onrender.com/servicios/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{id}"
             );
         }
         catch (Exception ex)
@@ -157,7 +157,7 @@ else
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.PutAsJsonAsync(
-                $"https://gestionsalyapi.onrender.com/servicios/{id}", servicio
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{id}", servicio
             );
 
             if (response.IsSuccessStatusCode)
@@ -273,7 +273,7 @@ else
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            servicio = await Http.GetFromJsonAsync<ServicioDTO>($"https://gestionsalyapi.onrender.com/servicios/{id}");
+            servicio = await Http.GetFromJsonAsync<ServicioDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{id}");
         }
         catch (Exception ex)
         {
@@ -289,7 +289,7 @@ else
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var response = await Http.PutAsJsonAsync($"https://gestionsalyapi.onrender.com/servicios/{id}", servicio);
+            var response = await Http.PutAsJsonAsync($"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{id}", servicio);
 
             if (response.IsSuccessStatusCode)
             {

@@ -160,7 +160,7 @@
         try
         {
             servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://gestionsalyapi.onrender.com/servicios");
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
         }
         catch (Exception ex)
         {
@@ -194,7 +194,7 @@
             };
 
             var response = await Http.PostAsJsonAsync(
-                "https://gestionsalyapi.onrender.com/citas", dto);
+                "https://1xbfjn6k-8081.use.devtunnels.ms/citas", dto);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {

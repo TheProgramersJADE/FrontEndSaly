@@ -299,7 +299,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             servicioDetalle = await Http.GetFromJsonAsync<ServicioDTO>(
-                $"https://gestionsalyapi.onrender.com/servicios/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{id}"
             );
         }
         catch (Exception ex)
@@ -329,7 +329,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.DeleteAsync(
-                $"https://gestionsalyapi.onrender.com/servicios/{servicioEliminar.Id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{servicioEliminar.Id}"
             );
 
             if (response.IsSuccessStatusCode)
@@ -373,7 +373,7 @@ else if (servicioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var servicio = await Http.GetFromJsonAsync<ServicioDTO>(
-                $"https://gestionsalyapi.onrender.com/servicios/{busquedaId}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios/{busquedaId}"
             );
 
             if (servicio != null)

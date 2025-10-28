@@ -387,7 +387,7 @@ private async Task CargarServiciosAsync()
         try
         {
            
-            var cita = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{buscarId}");
+            var cita = await Http.GetFromJsonAsync<CitaDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/citas/{buscarId}");
             if (cita != null)
             {
                 citas = new List<CitaDTO> { cita };
@@ -418,7 +418,7 @@ private async Task CargarServiciosAsync()
         try
         {
 
-            citaDetalle = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+            citaDetalle = await Http.GetFromJsonAsync<CitaDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/citas/{id}");
              // 🔹 Asignar el nombre del servicio
         var servicio = servicios.FirstOrDefault(s => s.Id == citaDetalle.IdServicio);
         citaDetalle.NombreServicio = servicio != null ? servicio.Nombre_Servicio : "Desconocido";
@@ -437,7 +437,7 @@ private async Task CargarFormularioEdicion(int id)
 
     try
     {
-        citaEditar = await Http.GetFromJsonAsync<CitaDTO>($"https://gestionsalyapi.onrender.com/citas/{id}");
+        citaEditar = await Http.GetFromJsonAsync<CitaDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/citas/{id}");
         tituloSeccion = "Editar Cita";
     }
     catch (Exception ex)
@@ -465,7 +465,7 @@ private async Task GuardarCambios()
         };
 
         var response = await Http.PutAsJsonAsync(
-            $"https://gestionsalyapi.onrender.com/citas/{citaEditar.IdCita}",
+            $"https://1xbfjn6k-8081.use.devtunnels.ms/citas/{citaEditar.IdCita}",
             dtoParaEnviar
         );
 
@@ -509,7 +509,7 @@ private async Task GuardarCambios()
     {
         try
         {
-            var response = await Http.DeleteAsync($"https://gestionsalyapi.onrender.com/citas/{citaEliminar.IdCita}");
+            var response = await Http.DeleteAsync($"https://1xbfjn6k-8081.use.devtunnels.ms/citas/{citaEliminar.IdCita}");
             if (response.IsSuccessStatusCode)
             {
                 mensaje = "✅ Cita eliminada correctamente.";

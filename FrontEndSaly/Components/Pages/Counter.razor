@@ -288,7 +288,7 @@ else if (usuarioEliminar != null)
             var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
 
             usuarios = await Http.GetFromJsonAsync<List<UsuarioDTO>>(
-                $"https://usersaly-api-node-js.onrender.com/usuarioslist/buscar{queryString}"
+                $"https://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/buscar{queryString}"
             );
             paginaActual = 1; // Reinicia a la primera página al buscar
         }
@@ -317,7 +317,7 @@ else if (usuarioEliminar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             usuarioDetalle = await Http.GetFromJsonAsync<UsuarioDTO>(
-                $"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}"
+                $"https://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{id}"
             );
         }
         catch (Exception ex)
@@ -342,7 +342,7 @@ else if (usuarioEliminar != null)
     {
         try
         {
-            var response = await Http.DeleteAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{usuarioEliminar.Id}");
+            var response = await Http.DeleteAsync($"https://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{usuarioEliminar.Id}");
             if (response.IsSuccessStatusCode)
             {
                 mensaje = "✅ Usuario eliminado correctamente.";

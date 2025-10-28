@@ -276,7 +276,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://gestionsalyapi.onrender.com/servicio-trabajador");
+            servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador");
         }
         catch (Exception ex) { mensaje = $"🚨 Error al cargar registros: {ex.Message}"; }
     }
@@ -287,7 +287,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            serviciosDisponibles = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+            serviciosDisponibles = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
         }
         catch (Exception ex) { mensaje = $"🚨 Error al cargar servicios disponibles: {ex.Message}"; }
     }
@@ -301,7 +301,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            var resultado = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}");
+            var resultado = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{filtroId}");
             servicios = resultado != null ? new List<ServicioTrabajadorDTO> { resultado } : new List<ServicioTrabajadorDTO>();
             paginaActual = 1;
         }
@@ -315,7 +315,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+            detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}");
         }
         catch (Exception ex) { mensaje = $"🚨 Error al obtener detalle: {ex.Message}"; }
     }
@@ -325,7 +325,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            editar = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+            editar = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}");
         }
         catch (Exception ex) { mensaje = $"🚨 Error al cargar datos para edición: {ex.Message}"; }
     }
@@ -335,7 +335,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            var response = await Http.PutAsJsonAsync($"https://gestionsalyapi.onrender.com/servicio-trabajador/{editar.Id}", editar);
+            var response = await Http.PutAsJsonAsync($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{editar.Id}", editar);
             if (response.IsSuccessStatusCode) { mensaje = "✅ Registro actualizado correctamente."; editar = null; await CargarServiciosAsync(); }
             else { mensaje = $"❌ Error al actualizar: {response.ReasonPhrase}"; }
         }
@@ -348,7 +348,7 @@ else if (eliminar != null)
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            var response = await Http.DeleteAsync($"https://gestionsalyapi.onrender.com/servicio-trabajador/{eliminar.Id}");
+            var response = await Http.DeleteAsync($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{eliminar.Id}");
             if (response.IsSuccessStatusCode) { mensaje = "✅ Registro eliminado correctamente."; eliminar = null; await CargarServiciosAsync(); }
             else { mensaje = $"❌ Error: {response.ReasonPhrase}"; }
         }
@@ -539,7 +539,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
-                "https://gestionsalyapi.onrender.com/servicio-trabajador"
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador"
             );
         }
         catch (Exception ex)
@@ -588,7 +588,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var resultado = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{filtroId}"
             );
 
             servicios = resultado != null ? new List<ServicioTrabajadorDTO> { resultado } : new List<ServicioTrabajadorDTO>();
@@ -613,7 +613,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}"
             );
         }
         catch (Exception ex)
@@ -630,7 +630,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             editar = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}"
             );
         }
         catch (Exception ex)
@@ -647,7 +647,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.PutAsJsonAsync(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{editar.Id}", editar);
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{editar.Id}", editar);
 
             if (response.IsSuccessStatusCode)
             {
@@ -679,7 +679,7 @@ else if (eliminar != null)
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.DeleteAsync(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{eliminar.Id}");
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{eliminar.Id}");
 
             if (response.IsSuccessStatusCode)
             {

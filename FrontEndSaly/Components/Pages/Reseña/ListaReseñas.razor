@@ -334,7 +334,7 @@ else if (resennaEditar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             resennaDetalle = await Http.GetFromJsonAsync<ResennaDTO>(
-                $"https://gestionsalyapi.onrender.com/resennas/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/resennas/{id}"
             );
         }
         catch (Exception ex)
@@ -352,7 +352,7 @@ else if (resennaEditar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             resennaEditar = await Http.GetFromJsonAsync<ResennaDTO>(
-                $"https://gestionsalyapi.onrender.com/resennas/{id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/resennas/{id}"
             );
         }
         catch (Exception ex)
@@ -379,7 +379,7 @@ else if (resennaEditar != null)
             };
 
             var response = await Http.PutAsJsonAsync(
-                $"https://gestionsalyapi.onrender.com/resennas/{resennaEditar.Id}",
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/resennas/{resennaEditar.Id}",
                 payload
             );
 
@@ -422,7 +422,7 @@ else if (resennaEditar != null)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.DeleteAsync(
-                $"https://gestionsalyapi.onrender.com/resennas/{resennaEliminar.Id}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/resennas/{resennaEliminar.Id}"
             );
 
             if (response.IsSuccessStatusCode)

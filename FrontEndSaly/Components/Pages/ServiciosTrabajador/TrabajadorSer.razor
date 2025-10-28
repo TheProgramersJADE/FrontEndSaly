@@ -256,7 +256,7 @@ else if (crearNuevo)
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+            listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
         }
         catch (Exception ex)
         {
@@ -288,7 +288,7 @@ else if (crearNuevo)
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://gestionsalyapi.onrender.com/servicio-trabajador");
+            registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador");
 
             if (!esAdmin) registros = registros.Where(r => r.Id_Trabajador == userId).ToList();
             paginaActual = 1;
@@ -312,7 +312,7 @@ else if (crearNuevo)
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var registro = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}");
+            var registro = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{filtroId}");
 
             if (registro != null)
             {
@@ -346,7 +346,7 @@ else if (crearNuevo)
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            registroDetalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}");
+            registroDetalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>($"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}");
         }
         catch (Exception ex)
         {
@@ -373,7 +373,7 @@ else if (crearNuevo)
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            var response = await Http.PostAsJsonAsync("https://gestionsalyapi.onrender.com/servicio-trabajador", new { id_servicio = nuevoRegistro.Id_Servicio });
+            var response = await Http.PostAsJsonAsync("https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador", new { id_servicio = nuevoRegistro.Id_Servicio });
 
             if (response.IsSuccessStatusCode)
             {
@@ -578,7 +578,7 @@ else if (crearNuevo)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://gestionsalyapi.onrender.com/servicios"
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios"
             );
         }
         catch (Exception ex)
@@ -624,7 +624,7 @@ else if (crearNuevo)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             registros = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
-                "https://gestionsalyapi.onrender.com/servicio-trabajador"
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador"
             );
 
             if (!esAdmin)
@@ -653,7 +653,7 @@ else if (crearNuevo)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var registro = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{filtroId}"
+                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{filtroId}"
             );
 
             if (registro != null)
@@ -689,7 +689,7 @@ else if (crearNuevo)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             registroDetalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://gestionsalyapi.onrender.com/servicio-trabajador/{id}"
+                $https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}"
             );
         }
         catch (Exception ex)
@@ -719,7 +719,7 @@ else if (crearNuevo)
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             var response = await Http.PostAsJsonAsync(
-                "https://gestionsalyapi.onrender.com/servicio-trabajador",
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador",
                 new { id_servicio = nuevoRegistro.Id_Servicio }
             );
 

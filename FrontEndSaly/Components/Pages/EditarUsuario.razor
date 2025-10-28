@@ -140,7 +140,7 @@ else
         Http.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"hhttps://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{id}");
     }
 
     private async Task ActualizarUsuarioAsync()
@@ -149,7 +149,7 @@ else
 
         try
         {
-            var response = await Http.PutAsJsonAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}", usuario);
+            var response = await Http.PutAsJsonAsync($"hhttps://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{id}", usuario);
 
             if (response.IsSuccessStatusCode)
             {
@@ -255,7 +255,7 @@ else
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
         // Cargar datos del usuario
-        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}");
+        usuario = await Http.GetFromJsonAsync<UsuarioRequest>($"https://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{id}");
     }
 
     private async Task ActualizarUsuarioAsync()
@@ -264,7 +264,7 @@ else
 
         try
         {
-            var response = await Http.PutAsJsonAsync($"https://usersaly-api-node-js.onrender.com/usuarioslist/{id}", usuario);
+            var response = await Http.PutAsJsonAsync($"https://1xbfjn6k-8080.use.devtunnels.ms/usuarioslist/{id}", usuario);
 
             if (response.IsSuccessStatusCode)
             {
