@@ -254,15 +254,54 @@ else if (crearNuevo)
         try
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            listaServicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
+            listaServicios = new List<ServicioDTO>();
+            int pagina = 1;
+            int limite = 50; // o el límite que tenga tu API
+            bool hayMas = true;
+
+            while (hayMas)
+            {
+                var respuesta = await Http.GetFromJsonAsync<PaginacionDTO>(
+                    $"https://1xbfjn6k-8081.use.devtunnels.ms/servicios?page={pagina}&limit={limite}"
+                );
+
+                if (respuesta != null && respuesta.Data.Any())
+                {
+                    listaServicios.AddRange(respuesta.Data);
+                    pagina++;
+                }
+                else
+                {
+                    hayMas = false;
+                }
+            }
         }
         catch (Exception ex)
         {
             mensaje = $"🚨 Error al cargar lista de servicios: {ex.Message}";
         }
     }
+
+    // Clase auxiliar para paginación
+    public class PaginacionDTO
+    {
+        [JsonPropertyName("data")]
+        public List<ServicioDTO> Data { get; set; } = new List<ServicioDTO>();
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+    }
+
+
 
     private string ObtenerNombreTrabajador(int idTrabajador) => esAdmin ? trabajadores.FirstOrDefault(t => t.Id == idTrabajador)?.Nombre ?? "Desconocido" : username;
 

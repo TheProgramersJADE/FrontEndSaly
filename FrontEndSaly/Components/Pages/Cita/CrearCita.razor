@@ -159,14 +159,38 @@
     {
         try
         {
-            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
+            // Traemos todos los servicios con paginación (page=1, limit=100)
+            var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>(
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios?page=1&limit=100"
+            );
+
+            servicios = respuesta?.Data ?? new List<ServicioDTO>();
         }
         catch (Exception ex)
         {
             mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
         }
     }
+
+    // Clase para recibir la respuesta paginada
+    public class RespuestaServicios
+    {
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<ServicioDTO> Data { get; set; }
+    }
+
 
     private async Task GuardarCita()
     {

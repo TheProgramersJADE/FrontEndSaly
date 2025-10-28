@@ -40,7 +40,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var s in servicios.Skip((paginaActual - 1) * registrosPorPagina).Take(registrosPorPagina))
+                        @foreach (var s in servicios)
                         {
                             <tr>
                                 <td>@s.Id</td>
@@ -59,8 +59,8 @@
                 <!-- 🔢 Paginación -->
                 <div class="d-flex justify-content-center mt-3">
                     <button class="btn styled-btn secondary me-2" @onclick="AnteriorPagina" disabled="@(paginaActual == 1)">⬅ Anterior</button>
-                    <span class="align-self-center">Página @paginaActual de @TotalPaginas</span>
-                    <button class="btn styled-btn secondary ms-2" @onclick="SiguientePagina" disabled="@(paginaActual == TotalPaginas)">Siguiente ➡</button>
+                    <span class="align-self-center">Página @paginaActual de @totalPaginas</span>
+                    <button class="btn styled-btn secondary ms-2" @onclick="SiguientePagina" disabled="@(paginaActual == totalPaginas)">Siguiente ➡</button>
                 </div>
             </div>
         }
@@ -260,7 +260,8 @@ else if (eliminar != null)
     // ✨ Paginación
     private int paginaActual = 1;
     private int registrosPorPagina = 5;
-    private int TotalPaginas => (int)Math.Ceiling((double)(servicios?.Count ?? 0) / registrosPorPagina);
+    private int totalPaginas = 1;
+    private int totalRegistros = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -270,26 +271,56 @@ else if (eliminar != null)
         await CargarServiciosDisponiblesAsync();
     }
 
+    // 🔹 Cargar servicios-trabajador (ya está bien)
     private async Task CargarServiciosAsync()
     {
         try
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var url = $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador?page={paginaActual}&limit={registrosPorPagina}";
+            var response = await Http.GetFromJsonAsync<PaginacionResponse<ServicioTrabajadorDTO>>(url);
+
+            if (response != null)
+            {
+                servicios = response.Data ?? new List<ServicioTrabajadorDTO>();
+                totalPaginas = response.TotalPages;
+                totalRegistros = response.Total;
+            }
+            else
+            {
+                servicios = new List<ServicioTrabajadorDTO>();
+                totalPaginas = 1;
+            }
         }
-        catch (Exception ex) { mensaje = $"🚨 Error al cargar registros: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar registros: {ex.Message}";
+        }
     }
+
 
     private async Task CargarServiciosDisponiblesAsync()
     {
         try
         {
             var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            serviciosDisponibles = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://1xbfjn6k-8081.use.devtunnels.ms/servicios");
+            Http.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            // 👇 Usamos el mismo modelo que ya existe en tu frontend
+            var respuesta = await Http.GetFromJsonAsync<RespuestaServiciosPaginados>(
+                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios?page=1&limit=100"
+            );
+
+            serviciosDisponibles = respuesta?.Data ?? new List<ServicioDTO>();
         }
-        catch (Exception ex) { mensaje = $"🚨 Error al cargar servicios disponibles: {ex.Message}"; }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios disponibles: {ex.Message}";
+        }
     }
 
     private string GetNombreServicio(int idServicio) => serviciosDisponibles?.FirstOrDefault(s => s.Id == idServicio)?.Nombre_Servicio ?? $"ID {idServicio}";
@@ -357,15 +388,24 @@ else if (eliminar != null)
     private void Regresar() { detalle = null; editar = null; eliminar = null; mensaje = string.Empty; }
 
     // ✨ Métodos paginación
-    private void SiguientePagina()
+    private async Task SiguientePagina()
     {
-        if (paginaActual < TotalPaginas) paginaActual++;
+        if (paginaActual < totalPaginas)
+        {
+            paginaActual++;
+            await CargarServiciosAsync();
+        }
     }
 
-    private void AnteriorPagina()
+    private async Task AnteriorPagina()
     {
-        if (paginaActual > 1) paginaActual--;
+        if (paginaActual > 1)
+        {
+            paginaActual--;
+            await CargarServiciosAsync();
+        }
     }
+
 
     public class ServicioTrabajadorDTO
     {
@@ -382,353 +422,26 @@ else if (eliminar != null)
         [JsonPropertyName("duracion")] public int Duracion { get; set; }
         [JsonPropertyName("precio")] public string Precio { get; set; }
     }
+
+    public class PaginacionResponse<T>
+    {
+        [JsonPropertyName("page")] public int Page { get; set; }
+        [JsonPropertyName("limit")] public int Limit { get; set; }
+        [JsonPropertyName("total")] public int Total { get; set; }
+        [JsonPropertyName("totalPages")] public int TotalPages { get; set; }
+        [JsonPropertyName("data")] public List<T> Data { get; set; }
+    }
+
+    public class RespuestaServiciosPaginados
+    {
+        [JsonPropertyName("page")] public int Page { get; set; }
+        [JsonPropertyName("limit")] public int Limit { get; set; }
+        [JsonPropertyName("total")] public int Total { get; set; }
+        [JsonPropertyName("totalPages")] public int TotalPages { get; set; }
+        [JsonPropertyName("data")] public List<ServicioDTO> Data { get; set; }
+    }
+
 }
 
 
 
-@* @page "/ServiciosTrabajador/listaServiTrabajadorAdmin"
-@using System.Text.Json.Serialization
-@inject HttpClient Http
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
-
-<PageTitle>Servicios - Trabajador</PageTitle>
-
-<h3>👷‍♂️ Gestión de Servicios por Trabajador</h3>
-
-@if (detalle == null && eliminar == null && editar == null)
-{
-
-    <!-- 🔍 Filtro por ID -->
-    <div class="mb-3 d-flex align-items-center">
-        <input type="number" class="form-control me-2" placeholder="Buscar por ID..." @bind="filtroId" />
-        <button class="btn btn-primary" @onclick="FiltrarPorId">🔍 Buscar</button>
-        <button class="btn btn-secondary ms-2" @onclick="LimpiarFiltro">↩️ Limpiar</button>
-    </div>
-
-
-    <!-- 📊 Tabla principal -->
-    @if (servicios == null)
-    {
-        <p>Cargando registros...</p>
-    }
-    else if (!servicios.Any())
-    {
-        <p>⚠️ No hay relaciones registradas en la base de datos.</p>
-    }
-    else
-    {
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>ID Servicio</th>
-                    <th>ID Trabajador</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var s in servicios)
-                {
-                    <tr>
-                        <td>@s.Id</td>
-                        <td>@GetNombreServicio(s.IdServicio)</td>
-                        <td>@s.IdTrabajador</td>
-                        <td>
-                            <button class="btn btn-info btn-sm me-1" @onclick="@(() => VerDetalleAsync(s.Id))">👁️ Ver</button>
-                            <button class="btn btn-warning btn-sm me-1" @onclick="@(() => EditarAsync(s.Id))">✏️ Editar</button>
-                            <button class="btn btn-danger btn-sm" @onclick="@(() => MostrarEliminar(s))">🗑️ Eliminar</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-}
-else if (detalle != null && eliminar == null && editar == null)
-{
-    <!-- 📄 Formulario de detalle -->
-    <div class="card p-3 mb-3">
-        <h5>📄 Detalle del Registro</h5>
-        <p><strong>ID:</strong> @detalle.Id</p>
-        <p><strong>Servicio:</strong> @GetNombreServicio(detalle.IdServicio)</p>
-        <p><strong>ID Trabajador:</strong> @detalle.IdTrabajador</p>
-
-        <button class="btn btn-secondary" @onclick="Regresar">🔙 Volver</button>
-    </div>
-}
-else if (editar != null)
-{
-    <!-- ✏️ Formulario de edición -->
-    <div class="card p-3 mb-3">
-        <h5>✏️ Editar </h5>
-
-        <div class="mb-3">
-            <label>Servicio</label>
-            <select class="form-select" @bind="editar.IdServicio">
-                @foreach (var s in serviciosDisponibles)
-                {
-                    <option value="@s.Id">@s.Nombre_Servicio</option>
-                }
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label>ID Trabajador</label>
-            <input type="number" class="form-control" @bind="editar.IdTrabajador" />
-        </div>
-
-        <button class="btn btn-success me-2" @onclick="ActualizarAsync">💾 Guardar Cambios</button>
-        <button class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
-    </div>
-}
-else if (eliminar != null)
-{
-    <!-- 🗑️ Confirmación de eliminación -->
-    <div class="card p-3 mb-3 border-danger">
-        <div class="alert alert-warning" role="alert">
-            ⚠️ ¿Seguro que deseas eliminar esta relación?
-        </div>
-
-        <p><strong>ID:</strong> @eliminar.Id</p>
-        <p><strong>Servicio:</strong> @GetNombreServicio(eliminar.IdServicio)</p>
-        <p><strong>ID Trabajador:</strong> @eliminar.IdTrabajador</p>
-
-        <div class="d-flex mt-3">
-            <button class="btn btn-danger me-2" @onclick="ConfirmarEliminarAsync">✅ Eliminar</button>
-            <button class="btn btn-secondary" @onclick="Regresar">Cancelar</button>
-        </div>
-    </div>
-}
-
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <p class="mt-3 alert alert-info">@mensaje</p>
-}
-
-@code {
-
-    private List<ServicioTrabajadorDTO> servicios;
-    private ServicioTrabajadorDTO detalle = null;
-    private ServicioTrabajadorDTO editar = null;
-    private ServicioTrabajadorDTO eliminar = null;
-    private string mensaje;
-    private int? filtroId;
-
-    // Lista de todos los servicios disponibles
-    private List<ServicioDTO> serviciosDisponibles;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-        if (string.IsNullOrEmpty(token))
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
-
-        await CargarServiciosAsync();
-        await CargarServiciosDisponiblesAsync();
-    }
-
-    private async Task CargarServiciosAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            servicios = await Http.GetFromJsonAsync<List<ServicioTrabajadorDTO>>(
-                "https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al cargar registros: {ex.Message}";
-        }
-    }
-
-    private async Task CargarServiciosDisponiblesAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            serviciosDisponibles = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://gestionsalyapi.onrender.com/servicios"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al cargar servicios disponibles: {ex.Message}";
-        }
-    }
-
-    // Método auxiliar para obtener el nombre del servicio por su Id
-    private string GetNombreServicio(int idServicio)
-    {
-        return serviciosDisponibles?.FirstOrDefault(s => s.Id == idServicio)?.Nombre_Servicio
-               ?? $"ID {idServicio}";
-    }
-
-
-    // 🔍 Buscar por ID
-    private async Task FiltrarPorId()
-    {
-        if (filtroId == null)
-        {
-            await CargarServiciosAsync();
-            return;
-        }
-
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var resultado = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{filtroId}"
-            );
-
-            servicios = resultado != null ? new List<ServicioTrabajadorDTO> { resultado } : new List<ServicioTrabajadorDTO>();
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 No se encontró el registro o error: {ex.Message}";
-        }
-    }
-
-    private async Task LimpiarFiltro()
-    {
-        filtroId = null;
-        await CargarServiciosAsync();
-    }
-
-    private async Task VerDetalleAsync(int id)
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            detalle = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al obtener detalle: {ex.Message}";
-        }
-    }
-
-    private async Task EditarAsync(int id)
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            editar = await Http.GetFromJsonAsync<ServicioTrabajadorDTO>(
-                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{id}"
-            );
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error al cargar datos para edición: {ex.Message}";
-        }
-    }
-
-    private async Task ActualizarAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var response = await Http.PutAsJsonAsync(
-                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{editar.Id}", editar);
-
-            if (response.IsSuccessStatusCode)
-            {
-                mensaje = "✅ Registro actualizado correctamente.";
-                editar = null;
-                await CargarServiciosAsync();
-            }
-            else
-            {
-                mensaje = $"❌ Error al actualizar: {response.ReasonPhrase}";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error de conexión: {ex.Message}";
-        }
-    }
-
-    private void MostrarEliminar(ServicioTrabajadorDTO s)
-    {
-        eliminar = s;
-    }
-
-    private async Task ConfirmarEliminarAsync()
-    {
-        try
-        {
-            var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
-            var response = await Http.DeleteAsync(
-                $"https://1xbfjn6k-8081.use.devtunnels.ms/servicio-trabajador/{eliminar.Id}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                mensaje = "✅ Registro eliminado correctamente.";
-                eliminar = null;
-                await CargarServiciosAsync();
-            }
-            else
-            {
-                mensaje = $"❌ Error al eliminar: {response.ReasonPhrase}";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"🚨 Error: {ex.Message}";
-        }
-    }
-
-    private void Regresar()
-    {
-        detalle = null;
-        editar = null;
-        eliminar = null;
-        mensaje = string.Empty;
-    }
-
-    public class ServicioTrabajadorDTO
-    {
-        [JsonPropertyName("id")] public int Id { get; set; }
-        [JsonPropertyName("id_servicio")] public int IdServicio { get; set; }
-        [JsonPropertyName("id_trabajador")] public int IdTrabajador { get; set; }
-    }
-
-    public class ServicioDTO
-    {
-        [JsonPropertyName("id_servicio")]
-        public int Id { get; set; }
-
-        [JsonPropertyName("nombre_servicio")]
-        public string Nombre_Servicio { get; set; }
-
-        [JsonPropertyName("descripcion")]
-        public string Descripcion { get; set; }
-
-        [JsonPropertyName("duracion")]
-        public int Duracion { get; set; }
-
-        [JsonPropertyName("precio")]
-        public string Precio { get; set; }
-    }
-}
- *@
