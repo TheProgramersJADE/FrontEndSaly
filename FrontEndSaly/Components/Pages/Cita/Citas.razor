@@ -334,13 +334,15 @@ else if (citaEditar != null)
         await CargarCitasAsync();
     }
 
-
-
     private async Task CargarServiciosAsync()
     {
         try
         {
-            var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>("https://gestionsalyapi.onrender.com/servicios");
+            // Traemos todos los servicios, ajusta el limit según tu necesidad
+            var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>(
+                "https://gestionsalyapi.onrender.com/servicios?page=1&limit=100"
+            );
+
             servicios = respuesta?.Data ?? new List<ServicioDTO>();
         }
         catch (Exception ex)
@@ -348,6 +350,20 @@ else if (citaEditar != null)
             mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
         }
     }
+
+
+    // private async Task CargarServiciosAsync()
+    // {
+    //     try
+    //     {
+    //         var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>("https://gestionsalyapi.onrender.com/servicios");
+    //         servicios = respuesta?.Data ?? new List<ServicioDTO>();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+    //     }
+    // }
 
     private async Task CargarCitasAsync()
     {
