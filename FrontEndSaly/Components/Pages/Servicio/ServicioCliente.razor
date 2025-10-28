@@ -125,6 +125,24 @@ else
         await CargarServiciosAsync();
     }
 
+    // private async Task CargarServiciosAsync()
+    // {
+    //     try
+    //     {
+    //         var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+    //         Http.DefaultRequestHeaders.Authorization =
+    //             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+    //         servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
+    //             "https://1xbfjn6k-8081.use.devtunnels.ms/servicios"
+    //         );
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+    //     }
+    // }
+
     private async Task CargarServiciosAsync()
     {
         try
@@ -133,15 +151,51 @@ else
             Http.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>(
-                "https://1xbfjn6k-8081.use.devtunnels.ms/servicios"
-            );
+            servicios = new List<ServicioDTO>();
+            int pagina = 1;
+            int totalPorPagina = 50; // o el valor que tu API tenga por página
+            bool hayMas = true;
+
+            while (hayMas)
+            {
+                var respuesta = await Http.GetFromJsonAsync<PaginacionDTO>(
+                    $"https://gestionsalyapi.onrender.com/servicios?page={pagina}&limit={totalPorPagina}"
+                );
+
+                if (respuesta != null && respuesta.Data.Any())
+                {
+                    servicios.AddRange(respuesta.Data);
+                    pagina++;
+                }
+                else
+                {
+                    hayMas = false;
+                }
+            }
         }
         catch (Exception ex)
         {
             mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
         }
     }
+
+    // Clase para recibir los datos paginados
+    public class PaginacionDTO
+    {
+        [JsonPropertyName("data")]
+        public List<ServicioDTO> Data { get; set; } = new List<ServicioDTO>();
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+    }
+
+
 
     private void AgendarCita(int servicioId)
     {
