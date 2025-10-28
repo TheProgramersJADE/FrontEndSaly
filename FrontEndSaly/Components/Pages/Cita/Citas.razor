@@ -30,6 +30,17 @@
         }
         else
         {
+            <select class="form-select form-select-sm styled-input me-2 mb-2"
+                    style="width: 200px;"
+                    @onchange="CambiarTamanoPagina">
+                <option value="5">5 por página</option>
+                <option value="10">10 por página</option>
+                <option value="20">20 por página</option>
+                <option value="50">50 por página</option>
+                <option value="100">100 por página</option>
+                <option value="5000">Todos</option>
+            </select>
+
             <div class="table-responsive">
                 <table class="table styled-table">
                     <thead>
@@ -44,7 +55,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var cita in citas.Skip((paginaActual - 1) * tamanoPagina).Take(tamanoPagina))
+                        @foreach (var cita in citas)
                         {
                             <tr>
                                 <td>@cita.IdCita</td>
@@ -300,52 +311,57 @@ else if (citaEditar != null)
 
     // 🔹 Paginación
     private int paginaActual = 1;
-    private int tamanoPagina = 5;
-    private int totalPaginas => (int)Math.Ceiling((double)(citas?.Count ?? 0) / tamanoPagina);
+    private int tamanoPagina = 10;
+    private int totalPaginas = 1;
 
     protected override async Task OnInitializedAsync()
     {
-          // ✅ Verificar si hay token en sessionStorage
-    var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
-    if (string.IsNullOrEmpty(token))
-    {
-        // Si no hay token, redirige inmediatamente al login
-        Navigation.NavigateTo("/", true);
-        return;
-    }
+        // ✅ Verificar si hay token en sessionStorage
+        var token = await JS.InvokeAsync<string>("sessionStorage.getItem", "authToken");
+        if (string.IsNullOrEmpty(token))
+        {
+            // Si no hay token, redirige inmediatamente al login
+            Navigation.NavigateTo("/", true);
+            return;
+        }
 
-    // ✅ Configurar token en el header (aunque la API no lo requiera)
-    Http.DefaultRequestHeaders.Authorization =
-        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        // ✅ Configurar token en el header (aunque la API no lo requiera)
+        Http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
 
-    await CargarServiciosAsync();  
+        await CargarServiciosAsync();  
         await CargarCitasAsync();
     }
 
 
 
-private async Task CargarServiciosAsync()
-{
-    try
+    private async Task CargarServiciosAsync()
     {
-            servicios = await Http.GetFromJsonAsync<List<ServicioDTO>>("https://gestionsalyapi.onrender.com/servicios");
+        try
+        {
+            var respuesta = await Http.GetFromJsonAsync<RespuestaServicios>("https://gestionsalyapi.onrender.com/servicios");
+            servicios = respuesta?.Data ?? new List<ServicioDTO>();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
+        }
     }
-    catch (Exception ex)
-    {
-        mensaje = $"🚨 Error al cargar servicios: {ex.Message}";
-    }
-}
 
     private async Task CargarCitasAsync()
     {
         try
         {
            
-            citas = await Http.GetFromJsonAsync<List<CitaDTO>>("https://gestionsalyapi.onrender.com/citas");
-            paginaActual = 1;
+            var respuesta = await Http.GetFromJsonAsync<RespuestaCitasPaginadas>(
+          $"https://gestionsalyapi.onrender.com/citas?page={paginaActual}&limit={tamanoPagina}"
+      );
 
-            // Asignar el nombre del servicio a cada cita
+            citas = respuesta?.Data ?? new List<CitaDTO>();
+            totalPaginas = respuesta?.TotalPages ?? 1;
+
+            // Asignar nombre del servicio a cada cita
             foreach (var cita in citas)
             {
                 var servicio = servicios.FirstOrDefault(s => s.Id == cita.IdServicio);
@@ -524,19 +540,31 @@ private async Task GuardarCambios()
     }
 
     // 🔹 Métodos de paginación
-    private void PaginaAnterior()
+    private async Task PaginaAnterior()
     {
         if (paginaActual > 1)
         {
             paginaActual--;
+            await CargarCitasAsync();
         }
     }
 
-    private void PaginaSiguiente()
+    private async Task PaginaSiguiente()
     {
         if (paginaActual < totalPaginas)
         {
             paginaActual++;
+            await CargarCitasAsync();
+        }
+    }
+
+    private async Task CambiarTamanoPagina(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int nuevoTamano))
+        {
+            tamanoPagina = nuevoTamano;
+            paginaActual = 1;
+            await CargarCitasAsync();
         }
     }
 
@@ -587,6 +615,43 @@ private async Task GuardarCambios()
         [JsonPropertyName("precio")]
         public string Precio { get; set; }
     }
+
+    public class RespuestaCitasPaginadas
+    {
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<CitaDTO> Data { get; set; }
+    }
+
+    public class RespuestaServicios
+    {
+        [JsonPropertyName("page")]
+        public int Page { get; set; }
+
+        [JsonPropertyName("limit")]
+        public int Limit { get; set; }
+
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("totalPages")]
+        public int TotalPages { get; set; }
+
+        [JsonPropertyName("data")]
+        public List<ServicioDTO> Data { get; set; }
+    }
+
 
 }
 
